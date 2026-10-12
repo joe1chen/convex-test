@@ -3091,9 +3091,9 @@ function parseFunctionHandle(handle: string) {
 
 function getFunctionPathFromAddress(
   functionAddress:
-    | { name: string; reference: undefined; functionHandle: undefined }
-    | { reference: string; name: undefined; functionHandle: undefined }
-    | { functionHandle: string; name: undefined; reference: undefined },
+    | { name: string; reference?: undefined; functionHandle?: undefined }
+    | { reference: string; name?: undefined; functionHandle?: undefined }
+    | { functionHandle: string; name?: undefined; reference?: undefined },
 ): FunctionPath {
   if (functionAddress.functionHandle !== undefined) {
     return parseFunctionHandle(functionAddress.functionHandle);
