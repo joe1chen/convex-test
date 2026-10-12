@@ -1,6 +1,6 @@
 # This fork of `convex-test`
 
-`@joe1chen/convex-test` is
+This `convex-test` is
 [get-convex/convex-test](https://github.com/get-convex/convex-test) with
 Dogomedia's patches on top, kept as the branch stack CLAUDE.md describes
 (`mirror` → `tooling` → `format` → `patches` = `main`). The base is a tagged
@@ -9,9 +9,15 @@ upstream commit (`base/v0.0.61` = upstream `v0.0.61`, 2026-10-09);
 
 ## Using it from a host
 
-- The package exports `index.ts` as source; there is no build. Hosts depend on
-  it as `workspace:*` from a `git subtree` of `main` and import
-  `@joe1chen/convex-test` where they imported `convex-test`.
+- The package exports `index.ts` as source; there is no build. It keeps
+  upstream's name, `convex-test`, so a host REPLACES npm's copy for its whole
+  dependency tree: it vendors `main` by `git subtree`, depends on it as
+  `workspace:*` and overrides `convex-test` to `workspace:*` (Bun's
+  `overrides`), which leaves one copy, linked as `node_modules/convex-test`.
+  Imports stay `from "convex-test"`. Third-party test helpers
+  (`@convex-dev/*/test`) import `convex-test` too and type `register(t)` against
+  its `TestConvex`; a second copy under another name is not assignable to
+  them.
 - **Always pass `modules`.** Without them `convexTest` falls back to
   upstream's `import.meta.glob("./convex/**/*.*s")`, which in source form is
   relative to this package's `index.ts` and finds this repository's test app,
