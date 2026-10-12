@@ -49,54 +49,40 @@
         "useConsistentTypeDefinitions": "off",
         "useConsistentMemberAccessibility": "off",
         "noIncrementDecrement": "off",
-        "noInferrableTypes": "off",
-        "noNegationElse": "off",
-        "noNestedTernary": "off",
-        "noParameterAssign": "off",
-        "noUnusedTemplateLiteral": "off",
-        "noUselessElse": "off",
-        "useAtIndex": "off",
-        "useBlockStatements": "off",
-        "useCollapsedIf": "off",
         "useConsistentArrayType": "off",
-        "useConsistentArrowReturn": "off",
         "useConsistentMethodSignatures": "off",
-        "useDefaultParameterLast": "off",
-        "useDefaultSwitchClause": "off",
-        "useErrorCause": "off",
-        "useForOf": "off",
-        "useImportType": "off",
-        "useNumberNamespace": "off",
-        "useNumericSeparators": "off",
-        "useShorthandAssign": "off",
         "useTemplate": "off",
-        "useUnifiedTypeSignatures": "off"
+        "useDefaultSwitchClause": "off",
+        "useAtIndex": "off",
+        "noNestedTernary": "off",
+        "useUnifiedTypeSignatures": "off",
+        "useShorthandAssign": "off",
+        "useForOf": "off",
+        "useErrorCause": "off",
+        "useDefaultParameterLast": "off",
+        "noParameterAssign": "off"
       },
       "suspicious": {
         "noUnnecessaryConditions": "off",
         "noEmptyBlockStatements": "off",
         "noExplicitAny": "off",
         "useAwait": "off",
+        "noShadow": "off",
         "noBitwiseOperators": "off",
-        "noConfusingVoidType": "off",
         "noDoubleEquals": "off",
         "noEvolvingTypes": "off",
+        "useStaticResponseMethods": "off",
         "noImplicitAnyLet": "off",
-        "noPrototypeBuiltins": "off",
-        "noShadow": "off",
-        "useStaticResponseMethods": "off"
+        "noConfusingVoidType": "off"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": "off",
         "noRedundantDefaultExport": "off",
-        "noDivRegex": "off",
-        "noForEach": "off",
-        "noUselessUndefined": "off",
-        "noUselessUndefinedInitialization": "off",
         "noVoid": "off",
-        "useArrayFind": "off",
         "useLiteralKeys": "off",
-        "noUselessStringConcat": "off"
+        "noForEach": "off",
+        "noUselessStringConcat": "off",
+        "useArrayFind": "off"
       },
       "performance": {
         "noAwaitInLoops": "off",
@@ -113,8 +99,7 @@
   "assist": {
     "actions": {
       "source": {
-        "useSortedKeys": "off",
-        "organizeImports": "off"
+        "useSortedKeys": "off"
       }
     }
   }

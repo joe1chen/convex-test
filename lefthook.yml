@@ -1,8 +1,5 @@
-# Runs before every commit on the final layer only. `mirror`, `tooling` and `format` are
-# mechanical layers of the branch stack (CLAUDE.md) and are never linted or tested; a rebase
-# of the stack must not trip a hook either. Lint and format only: type checks and tests run
-# by hand and in the host's `check:packages`, so that committing stays fast.
 pre-commit:
+  piped: true
   skip:
     - rebase
     - merge
@@ -10,7 +7,12 @@ pre-commit:
     - ref: tooling
     - ref: format
   commands:
-    check:
+    1_check:
       glob: "*.{js,mjs,cjs,ts,json,jsonc}"
       run: bunx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
+    2_no-comments:
+      glob: "*.ts"
+      exclude:
+        - "**/_generated/**"
+      run: cargo run --quiet --release --manifest-path /Users/josephchen/Dev/gongboo-ban/tools/check-banned-patterns/Cargo.toml -- --strip-comments {staged_files} && git diff --exit-code -- {staged_files}

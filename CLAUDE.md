@@ -16,6 +16,23 @@ on the one below. FORK.md lists the patches and their rules.
 lefthook skips them (and any rebase). Lint, typecheck and tests gate `patches` / `main`, and the
 host's `check:packages`.
 
+## Gate policy
+
+1. `format` holds deterministic automatic fixes only, regenerated on every sync by
+   `bun run format:layer`: the comment strip, then `biome check --write` (safe fixes, never
+   `--unsafe`).
+2. `patches` (our code) passes every gate: Biome with the full rules, typecheck, no comments
+   (lefthook's `2_no-comments` on `patches` / `main`), and the tests.
+3. Upstream's code is never edited by hand for style. Rules that upstream's code still breaks
+   after step 1 and that have no safe fix are turned off in `tooling`'s `biome.json`. They are
+   listed by name; the reason goes in the commit body. TypeScript 7's typecheck, upstream's whole
+   suite and the `fork:` tests must pass.
+4. A real bug that a lint rule reveals gets its own `patches` commit. FORK.md notes it as a
+   candidate for an upstream PR.
+
+The host does not check or strip the vendored copy again: `check` (what the host's
+`check:packages` runs) is Biome only.
+
 ## Layout (upstream's)
 
 - `index.ts` is the library, `transactionMetrics.ts` its limits. The package exports `index.ts`
