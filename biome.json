@@ -1,8 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": [
-    "ultracite/biome/core"
-  ],
+  "extends": ["ultracite/biome/core"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -41,10 +39,7 @@
           "options": {
             "strictCase": false,
             "requireAscii": true,
-            "filenameCases": [
-              "kebab-case",
-              "snake_case"
-            ]
+            "filenameCases": ["camelCase", "kebab-case", "snake_case"]
           }
         },
         "noExportedImports": "off",
@@ -52,26 +47,74 @@
         "noParameterProperties": "off",
         "useReadonlyClassProperties": "off",
         "useConsistentTypeDefinitions": "off",
-        "useConsistentMemberAccessibility": "off"
+        "useConsistentMemberAccessibility": "off",
+        "noIncrementDecrement": "off",
+        "noInferrableTypes": "off",
+        "noNegationElse": "off",
+        "noNestedTernary": "off",
+        "noParameterAssign": "off",
+        "noUnusedTemplateLiteral": "off",
+        "noUselessElse": "off",
+        "useAtIndex": "off",
+        "useBlockStatements": "off",
+        "useCollapsedIf": "off",
+        "useConsistentArrayType": "off",
+        "useConsistentArrowReturn": "off",
+        "useConsistentMethodSignatures": "off",
+        "useDefaultParameterLast": "off",
+        "useDefaultSwitchClause": "off",
+        "useErrorCause": "off",
+        "useForOf": "off",
+        "useImportType": "off",
+        "useNumberNamespace": "off",
+        "useNumericSeparators": "off",
+        "useShorthandAssign": "off",
+        "useTemplate": "off",
+        "useUnifiedTypeSignatures": "off"
       },
       "suspicious": {
         "noUnnecessaryConditions": "off",
         "noEmptyBlockStatements": "off",
         "noExplicitAny": "off",
-        "useAwait": "off"
+        "useAwait": "off",
+        "noBitwiseOperators": "off",
+        "noConfusingVoidType": "off",
+        "noDoubleEquals": "off",
+        "noEvolvingTypes": "off",
+        "noImplicitAnyLet": "off",
+        "noPrototypeBuiltins": "off",
+        "noShadow": "off",
+        "useStaticResponseMethods": "off"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": "off",
-        "noRedundantDefaultExport": "off"
+        "noRedundantDefaultExport": "off",
+        "noDivRegex": "off",
+        "noForEach": "off",
+        "noUselessUndefined": "off",
+        "noUselessUndefinedInitialization": "off",
+        "noVoid": "off",
+        "useArrayFind": "off",
+        "useLiteralKeys": "off",
+        "noUselessStringConcat": "off"
       },
       "performance": {
         "noAwaitInLoops": "off",
         "noDelete": "off",
-        "noNamespaceImport": "off"
+        "noNamespaceImport": "off",
+        "useTopLevelRegex": "off"
       },
       "correctness": {
         "noUnreachable": "off",
         "noUnusedFunctionParameters": "off"
+      }
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "useSortedKeys": "off",
+        "organizeImports": "off"
       }
     }
   }

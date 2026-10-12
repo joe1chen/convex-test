@@ -14,8 +14,8 @@
     "url": "https://github.com/joe1chen/convex-test/issues"
   },
   "repository": "github:joe1chen/convex-test",
-  "author": "Sarah Shader & Michal Srb <srb@convex.dev>",
   "license": "Apache-2.0",
+  "author": "Sarah Shader & Michal Srb <srb@convex.dev>",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
