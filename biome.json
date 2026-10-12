@@ -13,6 +13,7 @@
       "convex/**",
       "*.json",
       "!**/_generated",
+      "!declarations",
       "!package-lock.json"
     ]
   },

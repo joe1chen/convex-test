@@ -19,7 +19,10 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    ".": "./index.ts"
+    ".": {
+      "types": "./declarations/index.d.ts",
+      "default": "./index.ts"
+    }
   },
   "scripts": {
     "check": "biome check .",
@@ -27,7 +30,9 @@
     "format:layer": "check-banned-patterns --strip-comments $(git ls-files '*.ts' ':!:**/_generated/**') && biome check --write .",
     "prepare": "[ -d .git ] && lefthook install || true",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.non-strict-host.json && tsc --noEmit -p tsconfig.es2021-host.json && tsc -p convex/tsconfig.json"
+    "declarations": "tsc -p tsconfig.declarations.json",
+    "check:declarations": "fresh=$(mktemp -d) && tsc -p tsconfig.declarations.json --outDir \"$fresh\" && diff -r \"$fresh\" declarations",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.non-strict-host.json && tsc --noEmit -p tsconfig.es2021-host.json && tsc -p convex/tsconfig.json && bun run check:declarations"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

@@ -9,7 +9,8 @@ upstream commit (`base/v0.0.61` = upstream `v0.0.61`, 2026-10-09);
 
 ## Using it from a host
 
-- The package exports `index.ts` as source; there is no build. It keeps
+- The package runs `index.ts` as source and types it with committed
+  declarations (`declarations/`, below). It keeps
   upstream's name, `convex-test`, so a host REPLACES npm's copy for its whole
   dependency tree: it vendors `main` by `git subtree`, depends on it as
   `workspace:*` and overrides `convex-test` to `workspace:*` (Bun's
@@ -64,6 +65,19 @@ Convex's `convex/tsconfig.json` template compiles with `lib: ["es2021"]`, and
 a host checks `index.ts` as source under its own lib. `createTestJwt` read its
 claim names through `Object.hasOwn` (ES2022); the table is now a `Map`.
 `bun run typecheck` also compiles the library with `tsconfig.es2021-host.json`.
+
+### Declarations for hosts (`declarations/`)
+
+A host that type-checked `index.ts` as source compiled upstream's code under
+its own settings: `strict: false`, an ES2021 lib, `noUncheckedIndexedAccess`,
+no node types each broke it in a different program, a different set of sites.
+npm's package never had this: hosts read its `.d.ts` under `skipLibCheck`.
+The `types` condition of the `.` export now points at `declarations/index.d.ts`
+(emitted by `bun run declarations`, committed); the `default` condition keeps
+`index.ts` for the runtime. `bun run typecheck` ends with
+`check:declarations`, which emits afresh and fails when the committed copy
+differs, so a change to the library's types without `bun run declarations`
+fails the fork's gate and the host's `check:packages`.
 
 ## Gates
 
