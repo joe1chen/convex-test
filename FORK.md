@@ -45,7 +45,24 @@ an earlier cancel left alone, an instance at rest settling with zero
 iterations, a function in progress awaited, and functions that keep starting
 more while they run throwing after `maxIterations`.
 
+### Optional absent keys in `getFunctionPathFromAddress` (upstream-PR candidate)
+
+Hosts compile `index.ts` under their own settings. With `strict: false`,
+`getFunctionAddress`'s result (`name?: never`, …) did not fit a parameter that
+required the absent keys as `undefined`. The keys are now optional.
+`bun run typecheck` also compiles the library with `tsconfig.non-strict-host.json`.
+
+## Gates
+
+CLAUDE.md "Gate policy": `format` is `bun run format:layer` (comment strip, then
+`biome check --write`). Upstream's remaining rule violations are a named list in
+`biome.json`. Our commits pass the full rules, the no-comments hook, typecheck
+and tests.
+
 ## Sync record
 
-- `base/v0.0.61` (2026-10-12): initial fork. Upstream's 375 tests pass on the
-  tooling layer unchanged (TypeScript 7, vitest 5, convex 1.46.0).
+- `base/v0.0.61` (2026-10-12): initial fork. Upstream's 375 tests pass after
+  `format:layer` (TypeScript 7, vitest 5, convex 1.46.0). Open: the strip removes
+  upstream's 25 `@ts-expect-error` assertions (componentRegistration.test.ts,
+  defineTestApp.test.ts, explicitTableNames.ts, inlineFunctions.test.ts), so
+  `typecheck` fails on `convex/` until the owner decides how they survive.
