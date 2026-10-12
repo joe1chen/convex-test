@@ -1,5 +1,5 @@
 {
-  "name": "@joe1chen/convex-test",
+  "name": "convex-test",
   "version": "0.0.61",
   "private": true,
   "description": "A JS mock of the Convex backend for testing Convex functions: get-convex/convex-test with Dogomedia's patches rebased on top (FORK.md), on this workspace's toolchain.",
