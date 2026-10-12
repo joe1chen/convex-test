@@ -1298,6 +1298,25 @@ function createTestJwt(identity: Record<string, any>) {
   return `${header}.${payload}.`;
 }
 
+async function cancelPendingScheduledFunction({
+  db,
+  jobId,
+  componentPath,
+}: {
+  db: DatabaseFake;
+  jobId: GenericId<"_scheduled_functions">;
+  componentPath: string;
+}) {
+  await authStorage.run(new AuthFake(), () =>
+    withAuth().runInComponent(componentPath, async () => {
+      const job = db.get("_scheduled_functions", jobId) as ScheduledFunction | undefined;
+      if (job?.state.kind === "pending") {
+        db.patch("_scheduled_functions", jobId, { state: { kind: "canceled" } });
+      }
+    }),
+  );
+}
+
 async function runScheduledFunction({
   db,
   jobId,
@@ -1607,28 +1626,34 @@ function asyncSyscallImpl() {
         const capturedGlobal = getConvexGlobal();
         const scheduler = capturedGlobal.scheduler;
         nestedTxStorage.exit(() => {
-          scheduler.timerScheduled();
-          frameworkSetTimeout(
-            () => {
-              scheduler.timerFired();
-              const promise = convexGlobalStorage
-                .run(capturedGlobal, () =>
-                  runScheduledFunction({
-                    db,
-                    jobId,
-                    componentPath,
-                    functionPath,
-                    args: parsedArgs,
-                    name,
-                  }),
-                )
-                .finally(() => {
-                  scheduler.finish(promise);
-                });
-              scheduler.add(promise);
-            },
-            Math.max(0, tsInSecs * 1000 - Date.now()),
-          );
+          const pendingFunction: PendingScheduledFunction = {
+            cancel: () =>
+              convexGlobalStorage.run(capturedGlobal, () =>
+                cancelPendingScheduledFunction({ db, jobId, componentPath }),
+              ),
+            clearTimer: frameworkSetTimeout(
+              () => {
+                scheduler.timerFired(pendingFunction);
+                const promise = convexGlobalStorage
+                  .run(capturedGlobal, () =>
+                    runScheduledFunction({
+                      db,
+                      jobId,
+                      componentPath,
+                      functionPath,
+                      args: parsedArgs,
+                      name,
+                    }),
+                  )
+                  .finally(() => {
+                    scheduler.finish(promise);
+                  });
+                scheduler.add(promise);
+              },
+              Math.max(0, tsInSecs * 1000 - Date.now()),
+            ),
+          };
+          scheduler.timerScheduled(pendingFunction);
         });
         return JSON.stringify(convexToJson(jobId));
       }
@@ -1919,6 +1944,8 @@ export type TestConvexForDataModel<DataModel extends GenericDataModel> = {
 
   finishAllScheduledFunctions: (advanceTimers: () => void, maxIterations?: number) => Promise<void>;
 
+  settleScheduledFunctions: (maxIterations?: number) => Promise<void>;
+
   withIdentity(identity: Partial<UserIdentity>): TestConvexForDataModel<DataModel>;
   withRequestMetadata(
     metadata: Partial<Pick<RequestMetadata, "ip" | "userAgent">>,
@@ -2101,11 +2128,12 @@ const PATCHABLE_GLOBALS = [
 type GlobalOverrides = Record<string, unknown>;
 const globalOverridesStorage = new AsyncLocalStorage<GlobalOverrides>();
 
-function frameworkSetTimeout(
-  cb: (...args: unknown[]) => void,
-  ms?: number,
-): ReturnType<typeof setTimeout> {
-  return globalOverridesStorage.exit(() => globalThis.setTimeout(cb, ms));
+function frameworkSetTimeout(cb: (...args: unknown[]) => void, ms?: number): () => void {
+  return globalOverridesStorage.exit(() => {
+    const clearTimer = globalThis.clearTimeout;
+    const timer = globalThis.setTimeout(cb, ms);
+    return () => globalOverridesStorage.exit(() => clearTimer(timer));
+  });
 }
 
 function disallowedInTransaction(name: string): (...args: unknown[]) => never {
@@ -2206,20 +2234,25 @@ function ensureGlobalProxy() {
   } as ConvexGlobal;
 }
 
+type PendingScheduledFunction = {
+  cancel: () => Promise<void>;
+  clearTimer: () => void;
+};
+
 class Scheduler {
   private _inFlight: Set<Promise<void>> = new Set();
-  private _pendingTimerCount = 0;
+  private _pending: Set<PendingScheduledFunction> = new Set();
 
-  timerScheduled() {
-    this._pendingTimerCount += 1;
+  timerScheduled(pendingFunction: PendingScheduledFunction) {
+    this._pending.add(pendingFunction);
   }
 
-  timerFired() {
-    this._pendingTimerCount -= 1;
+  timerFired(pendingFunction: PendingScheduledFunction) {
+    this._pending.delete(pendingFunction);
   }
 
   anyPendingTimers(): boolean {
-    return this._pendingTimerCount > 0;
+    return this._pending.size > 0;
   }
 
   add(promise: Promise<void>) {
@@ -2236,6 +2269,30 @@ class Scheduler {
 
   async finishInProgressScheduledFunctions(): Promise<void> {
     while (this._inFlight.size > 0) {
+      await Promise.all(this._inFlight);
+    }
+  }
+
+  async settleScheduledFunctions(maxIterations: number): Promise<void> {
+    for (let iteration = 0; ; iteration += 1) {
+      if (this._pending.size === 0 && this._inFlight.size === 0) {
+        return;
+      }
+      if (iteration === maxIterations) {
+        throw new Error(
+          `settleScheduledFunctions: scheduled functions still running after ${maxIterations} iterations. ` +
+            "Check for scheduled functions that keep scheduling more while they run, " +
+            "or increase maxIterations.",
+        );
+      }
+      const pending = [...this._pending];
+      this._pending.clear();
+      for (const pendingFunction of pending) {
+        pendingFunction.clearTimer();
+      }
+      for (const pendingFunction of pending) {
+        await pendingFunction.cancel();
+      }
       await Promise.all(this._inFlight);
     }
   }
@@ -2918,6 +2975,9 @@ function withAuth(
 
     finishInProgressScheduledFunctions: (): Promise<void> =>
       getConvexGlobal().scheduler.finishInProgressScheduledFunctions(),
+
+    settleScheduledFunctions: (maxIterations = 100): Promise<void> =>
+      getConvexGlobal().scheduler.settleScheduledFunctions(maxIterations),
 
     finishAllScheduledFunctions: async (
       advanceTimers: () => void,
