@@ -24,22 +24,22 @@
   "scripts": {
     "check": "biome check .",
     "check:fix": "biome check . --write",
-    "format:layer": "cargo run --quiet --release --manifest-path /Users/josephchen/Dev/gongboo-ban/tools/check-banned-patterns/Cargo.toml -- --strip-comments $(git ls-files '*.ts' ':!:**/_generated/**') && biome check --write .",
+    "format:layer": "check-banned-patterns --strip-comments $(git ls-files '*.ts' ':!:**/_generated/**') && biome check --write .",
     "prepare": "[ -d .git ] && lefthook install || true",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc -p convex/tsconfig.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "2.5.15",
     "@edge-runtime/vm": "^5.0.0",
     "@types/node": "^22.16.5",
     "convex": "1.46.0",
     "jose": "^6.2.3",
-    "lefthook": "^2.1.17",
-    "typescript": "^7.0.2",
-    "ultracite": "^7.12.4",
+    "lefthook": "2.0.15",
+    "typescript": "7.0.2",
+    "ultracite": "7.0.11",
     "vite": "^8.3.2",
-    "vitest": "^5.0.3"
+    "vitest": "5.0.3"
   },
   "peerDependencies": {
     "convex": "^1.46.0"

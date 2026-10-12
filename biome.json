@@ -99,7 +99,8 @@
   "assist": {
     "actions": {
       "source": {
-        "useSortedKeys": "off"
+        "useSortedKeys": "off",
+        "organizeImports": "off"
       }
     }
   }

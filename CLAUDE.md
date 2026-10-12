@@ -6,7 +6,7 @@ on the one below. FORK.md lists the patches and their rules.
 | Branch    | Holds                                                                      |
 |-----------|----------------------------------------------------------------------------|
 | `mirror`  | upstream `main`, untouched. Never commit here; `git fetch upstream` moves it. |
-| `tooling` | off `mirror`: THIS workspace's toolchain only — Biome (ultracite), TypeScript 7, vitest, lefthook, bun.lock, the manifest (name, source export, dependencies aligned with the host: convex, vitest, typescript). No source change. |
+| `tooling` | off `mirror`: THIS workspace's toolchain only — Biome (ultracite), TypeScript 7, vitest, lefthook, bun.lock, the manifest (name, source export, dependencies aligned with the host: convex; ultracite, @biomejs/biome, typescript, vitest and lefthook pinned to the exact versions the host's bun.lock resolves). No source change. |
 | `format`  | off `tooling`: `bun run format:layer` applied to upstream's code: comments stripped (the host's zero-comments rule; tool directives stay) and `biome check --write`. Regenerated, never hand-resolved. |
 | `patches` | off `format`: every behaviour change of ours, one commit each with its reason, its tests, FORK.md. |
 
@@ -55,9 +55,10 @@ git rebase --update-refs mirror patches        # moves tooling, format and patch
   dependencies only where the host has them.
 - A conflict in `format` is never resolved by hand: `git checkout --theirs -- index.ts
   transactionMetrics.ts convex && bun run format:layer && git add -A && git rebase --continue`
-  (theirs = upstream's new text). `format:layer` runs the host's comment stripper
-  (`tools/check-banned-patterns` in gongboo-ban, by absolute path, so it needs that checkout and
-  cargo).
+  (theirs = upstream's new text). `format:layer` and lefthook's `2_no-comments` run the host's
+  comment stripper, `check-banned-patterns` from PATH (`cargo install --path
+  tools/check-banned-patterns` in gongboo-ban). It keeps tool directives, TypeScript directives
+  and license notices.
 - A conflict in `patches` is semantic: read upstream's change, keep the rule FORK.md names.
 - Then `bun install && bun run check && bun run typecheck && bun run test`, tag the base
   (`git tag base/vNEW 'vNEW^{commit}'`), push every branch (`main` fast-forwards to `patches`),

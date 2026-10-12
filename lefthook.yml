@@ -15,4 +15,4 @@ pre-commit:
       glob: "*.ts"
       exclude:
         - "**/_generated/**"
-      run: cargo run --quiet --release --manifest-path /Users/josephchen/Dev/gongboo-ban/tools/check-banned-patterns/Cargo.toml -- --strip-comments {staged_files} && git diff --exit-code -- {staged_files}
+      run: check-banned-patterns --strip-comments {staged_files} && git diff --exit-code -- {staged_files}
