@@ -62,7 +62,6 @@ and tests.
 ## Sync record
 
 - `base/v0.0.61` (2026-10-12): initial fork. Upstream's 375 tests pass after
-  `format:layer` (TypeScript 7, vitest 5, convex 1.46.0). Open: the strip removes
-  upstream's 25 `@ts-expect-error` assertions (componentRegistration.test.ts,
-  defineTestApp.test.ts, explicitTableNames.ts, inlineFunctions.test.ts), so
-  `typecheck` fails on `convex/` until the owner decides how they survive.
+  `format:layer` (TypeScript 7, vitest 5, convex 1.46.0). The stripper keeps
+  TypeScript directives and license notices (gongboo-ban 376a123a), so
+  upstream's 25 `@ts-expect-error` assertions survive the format layer.
