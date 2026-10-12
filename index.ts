@@ -2,32 +2,32 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
-  ActionBuilder,
-  ApiFromModules,
-  DataModelFromSchemaDefinition,
-  DefaultFunctionArgs,
-  DocumentByName,
-  FilterApi,
-  FunctionReference,
-  FunctionReturnType,
-  GenericActionCtx,
-  GenericDataModel,
-  GenericDocument,
-  GenericMutationCtx,
-  GenericQueryCtx,
-  GenericSchema,
-  HttpRouter,
-  MutationBuilder,
-  OptionalRestArgs,
-  PublicHttpAction,
-  QueryBuilder,
-  RegisteredAction,
-  RegisteredMutation,
-  RegisteredQuery,
-  RequestMetadata,
-  SchemaDefinition,
-  SystemDataModel,
-  UserIdentity,
+  type ActionBuilder,
+  type ApiFromModules,
+  type DataModelFromSchemaDefinition,
+  type DefaultFunctionArgs,
+  type DocumentByName,
+  type FilterApi,
+  type FunctionReference,
+  type FunctionReturnType,
+  type GenericActionCtx,
+  type GenericDataModel,
+  type GenericDocument,
+  type GenericMutationCtx,
+  type GenericQueryCtx,
+  type GenericSchema,
+  type HttpRouter,
+  type MutationBuilder,
+  type OptionalRestArgs,
+  type PublicHttpAction,
+  type QueryBuilder,
+  type RegisteredAction,
+  type RegisteredMutation,
+  type RegisteredQuery,
+  type RequestMetadata,
+  type SchemaDefinition,
+  type SystemDataModel,
+  type UserIdentity,
   actionGeneric,
   anyApi,
   componentsGeneric,
@@ -43,28 +43,20 @@ import {
 } from "convex/server";
 import {
   CommitTsPlaceholder,
-  GenericId,
-  JSONValue,
-  Value,
+  type GenericId,
+  type JSONValue,
+  type Value,
   compareValues,
   convexToJson,
   getConvexSize,
   getDocumentSize,
   jsonToConvex,
 } from "convex/values";
-import {
-  TransactionMetricsTracker,
-  TransactionMetrics,
-} from "./transactionMetrics.js";
+import { TransactionMetricsTracker, type TransactionMetrics } from "./transactionMetrics.js";
 
-// Real Convex IDs are 32 characters. IDs may exceed this length for very long
-// table names or large numbers of documents, but this is the typical target.
 const TYPICAL_CONVEX_ID_LENGTH = 32;
 
-type FilterJson =
-  | { $eq: [FilterJson, FilterJson] }
-  | { $field: string }
-  | JSONValue;
+type FilterJson = { $eq: [FilterJson, FilterJson] } | { $field: string } | JSONValue;
 
 type QueryOperator = { filter: FilterJson } | { limit: number };
 type Source =
@@ -104,10 +96,7 @@ type SerializedSearchFilter =
       value: JSONValue;
     };
 
-type ScheduledFunction = DocumentByName<
-  SystemDataModel,
-  "_scheduled_functions"
->;
+type ScheduledFunction = DocumentByName<SystemDataModel, "_scheduled_functions">;
 
 type StoredDocument = GenericDocument & {
   _id: DocumentId;
@@ -163,18 +152,9 @@ class DatabaseFake {
   private _documents: Record<DocumentId, StoredDocument> = {};
   private _storage: Record<DocumentId, Blob> = {};
   private _nextQueryId: QueryId = 1;
-  private _nextDocId: number = 10000;
-  private _lastCreationTime: number = 0;
+  private _nextDocId = 10_000;
+  private _lastCreationTime = 0;
   private _queryResults: Record<QueryId, Array<GenericDocument>> = {};
-  // Pending writes for each level of transaction nesting.
-  // Whenever a child mutation begins, a new level is created for all
-  // components.
-  // - When a mutation performs updates, they are staged in the last
-  //   level of writes for the mutation's component.
-  // - When a child mutation commits, the writes are merged up one level.
-  // - When the top-level mutation commits, the writes are applied to the
-  //   database.
-  // - When a mutation is rolled back, last level of writes is discarded.
   private _writes: Array<Record<DocumentId, StoredDocument | null>> = [];
 
   private _schema: {
@@ -189,10 +169,7 @@ class DatabaseFake {
     >;
   } | null;
 
-  constructor(
-    schema: SchemaDefinition<GenericSchema, boolean> | null,
-    componentPath: string,
-  ) {
+  constructor(schema: SchemaDefinition<GenericSchema, boolean> | null, componentPath: string) {
     this._schema =
       schema === null
         ? null
@@ -210,15 +187,11 @@ class DatabaseFake {
     this.validateSchema();
   }
 
-  // Called by TransactionManager.begin.
   startTransaction() {
     this._writes.push({});
   }
 
-  get<Table extends TableName>(
-    tableName: Table | undefined,
-    id: GenericId<Table>,
-  ) {
+  get<Table extends TableName>(tableName: Table | undefined, id: GenericId<Table>) {
     this._validateId(tableName, id);
 
     for (let i = this._writes.length - 1; i >= 0; i--) {
@@ -231,11 +204,7 @@ class DatabaseFake {
     return this._documents[id] ?? null;
   }
 
-  // Note that this is not the format the real backend
-  // uses for IDs.
-  private _generateId<TableName extends string>(
-    table: TableName,
-  ): GenericId<TableName> {
+  private _generateId<TableName extends string>(table: TableName): GenericId<TableName> {
     const counterPadLen = TYPICAL_CONVEX_ID_LENGTH - table.length;
     const counter = this._nextDocId.toString().padStart(counterPadLen, "0");
     const id = counter + table;
@@ -265,8 +234,7 @@ class DatabaseFake {
     this._validate(table, value);
     const _id = this._generateId(table);
     const now = Date.now();
-    const _creationTime =
-      now <= this._lastCreationTime ? this._lastCreationTime + 0.001 : now;
+    const _creationTime = now <= this._lastCreationTime ? this._lastCreationTime + 0.001 : now;
     this._lastCreationTime = _creationTime;
     this._addWrite(_id, { ...value, _id, _creationTime });
     return _id;
@@ -292,14 +260,10 @@ class DatabaseFake {
     const { _id, _creationTime, ...fields } = document;
     if (value._id !== undefined && value._id !== _id) {
       throw new Error(
-        `Provided \`_id\` field value "${value._id}" ` +
-          `does not match the document ID "${_id}"`,
+        `Provided \`_id\` field value "${value._id}" ` + `does not match the document ID "${_id}"`,
       );
     }
-    if (
-      value._creationTime !== undefined &&
-      value._creationTime !== _creationTime
-    ) {
+    if (value._creationTime !== undefined && value._creationTime !== _creationTime) {
       throw new Error(
         `Provided \`_creationTime\` field value ${value._creationTime} ` +
           `does not match the document's creation time ${_creationTime}`,
@@ -339,10 +303,7 @@ class DatabaseFake {
           `does not match the document ID "${document._id}"`,
       );
     }
-    if (
-      value._creationTime !== undefined &&
-      value._creationTime !== document._creationTime
-    ) {
+    if (value._creationTime !== undefined && value._creationTime !== document._creationTime) {
       throw new Error(
         `Provided \`_creationTime\` field value ${value._creationTime} ` +
           `does not match the document's creation time ${document._creationTime}`,
@@ -362,10 +323,7 @@ class DatabaseFake {
     });
   }
 
-  delete<Table extends TableName>(
-    tableName: Table | undefined,
-    id: GenericId<Table>,
-  ) {
+  delete<Table extends TableName>(tableName: Table | undefined, id: GenericId<Table>) {
     this._validateId(tableName, id);
 
     const document = this.get(tableName, id);
@@ -375,10 +333,7 @@ class DatabaseFake {
     this._addWrite(id, null);
   }
 
-  private _validateId(
-    expectedTableName: unknown,
-    id: unknown,
-  ): asserts id is DocumentId {
+  private _validateId(expectedTableName: unknown, id: unknown): asserts id is DocumentId {
     if (typeof id !== "string") {
       throw new Error(
         `Invalid argument \`id\`, expected string but got '${typeof id}': ${id as any}`,
@@ -397,9 +352,7 @@ class DatabaseFake {
 
     const actualTableName = tableNameFromId(id);
     if (actualTableName === null) {
-      throw new Error(
-        `Invalid argument \`id\`, expected ID value but got '${id}'`,
-      );
+      throw new Error(`Invalid argument \`id\`, expected ID value but got '${id}'`);
     }
 
     if (actualTableName !== expectedTableName) {
@@ -436,7 +389,6 @@ class DatabaseFake {
     this._writes.pop();
   }
 
-  // Temporarily hide all pending writes so reads only see committed state.
   stashWrites(): Array<Record<DocumentId, StoredDocument | null>> {
     const stashed = this._writes;
     this._writes = [];
@@ -455,8 +407,6 @@ class DatabaseFake {
     if (validator === undefined) {
       return;
     }
-    // Validate the pre-commit view, like the backend does, so an unresolved
-    // commit timestamp is checked as the int64 it will become.
     validateValidator(validator, resolvePendingValues(doc));
   }
 
@@ -475,20 +425,14 @@ class DatabaseFake {
     }
     if (results.length === 0) {
       return { value: null, done: true };
-    } else {
-      return { value: results.shift()!, done: false };
     }
+    return { value: results.shift()!, done: false };
   }
 
   private _encodeCursor(doc: GenericDocument, fieldPaths: string[]): string {
     const keys = fieldPaths.map((fp) => evaluateFieldPath(fp, doc));
-    // null sentinel in the array = undefined field value.
-    // Everything else is JSON.stringify(convexToJson(k)) producing a string,
-    // so null vs string is unambiguous on decode.
     return JSON.stringify(
-      keys.map((k) =>
-        k === undefined ? null : JSON.stringify(convexToJson(k)),
-      ),
+      keys.map((k) => (k === undefined ? null : JSON.stringify(convexToJson(k)))),
     );
   }
 
@@ -523,32 +467,27 @@ class DatabaseFake {
     maximumRowsRead?: number | null;
     maximumBytesRead?: number | null;
   }) {
-    const { sortedDocs, filterFn, fieldPathsToSortBy, order } =
-      this._resolveQuerySource(query);
+    const { sortedDocs, filterFn, fieldPathsToSortBy, order } = this._resolveQuerySource(query);
 
-    // Always include _id in sort key fields for uniqueness
     const cursorFields = fieldPathsToSortBy.includes("_id")
       ? fieldPathsToSortBy
       : [...fieldPathsToSortBy, "_id"];
 
     const parseCursor = (c: string | null | undefined) => {
       if (!c) return null;
-      // null = undefined field; strings are JSON.stringify(convexToJson(v))
       return (JSON.parse(c) as any[]).map((k) =>
         k === null ? undefined : jsonToConvex(JSON.parse(k)),
       );
     };
 
-    const cursorKeys = cursor !== "_end_cursor" ? parseCursor(cursor) : null;
-    // _end_cursor as endCursor means "to the end of the range" — no boundary
+    const cursorKeys = cursor === "_end_cursor" ? null : parseCursor(cursor);
     const hasEndBoundary = !!endCursor && endCursor !== "_end_cursor";
     const endCursorKeys = hasEndBoundary ? parseCursor(endCursor) : null;
 
     const page: GenericDocument[] = [];
-    // null cursor = start of range
     let isInPage = cursor === null;
     let isDone = false;
-    let continueCursor: string = "_end_cursor";
+    let continueCursor = "_end_cursor";
     let splitCursor: string | null = null;
     let pageStatus: "SplitRecommended" | "SplitRequired" | null = null;
     let rowsRead = 0;
@@ -561,13 +500,10 @@ class DatabaseFake {
 
       if (!isInPage) {
         if (cursor === "_end_cursor") {
-          // Past the end — no doc is after the end cursor
           continue;
-        } else if (cursorKeys) {
-          // Sort-key-based cursor: skip docs at or before cursor position
-          if (
-            this._docIsAfterCursor(doc, cursorKeys, cursorFields, order) > 0
-          ) {
+        }
+        if (cursorKeys) {
+          if (this._docIsAfterCursor(doc, cursorKeys, cursorFields, order) > 0) {
             isInPage = true;
           } else {
             continue;
@@ -575,16 +511,9 @@ class DatabaseFake {
         }
       }
 
-      // endCursor: stop when we reach or pass this position (inclusive boundary)
       if (hasEndBoundary && endCursorKeys) {
-        const cmp = this._docIsAfterCursor(
-          doc,
-          endCursorKeys,
-          cursorFields,
-          order,
-        );
+        const cmp = this._docIsAfterCursor(doc, endCursorKeys, cursorFields, order);
         if (cmp >= 0) {
-          // At or past end cursor — include this doc if exactly at cursor, then stop
           if (cmp === 0) {
             rowsRead += 1;
             bytesRead += getDocumentSize(doc);
@@ -602,7 +531,6 @@ class DatabaseFake {
       bytesRead += getDocumentSize(doc);
       readDocCursors.push(this._encodeCursor(doc, cursorFields));
 
-      // Check bandwidth limits
       let hitLimit = false;
       if (maximumRowsRead && rowsRead >= maximumRowsRead) {
         hitLimit = true;
@@ -623,7 +551,6 @@ class DatabaseFake {
 
       if (!endCursor && page.length >= pageSize) {
         if (isLastDoc) {
-          // No more docs — don't set continueCursor so isDone becomes true
         } else {
           continueCursor = this._encodeCursor(doc, cursorFields);
         }
@@ -635,16 +562,10 @@ class DatabaseFake {
       isDone = true;
     }
 
-    // Compute splitCursor at midpoint when limits are hit
     if (pageStatus === "SplitRequired" && readDocCursors.length >= 2) {
       const midIdx = Math.floor((readDocCursors.length - 1) / 2);
       splitCursor = readDocCursors[midIdx];
-    } else if (
-      pageStatus === null &&
-      rowsRead > pageSize + 1 &&
-      readDocCursors.length >= 2
-    ) {
-      // Recommend split when we had to scan significantly more rows than pageSize
+    } else if (pageStatus === null && rowsRead > pageSize + 1 && readDocCursors.length >= 2) {
       pageStatus = "SplitRecommended";
       const midIdx = Math.floor((readDocCursors.length - 1) / 2);
       splitCursor = readDocCursors[midIdx];
@@ -659,10 +580,7 @@ class DatabaseFake {
     };
   }
 
-  private _iterateDocs(
-    tableName: string,
-    callback: (doc: GenericDocument) => void,
-  ) {
+  private _iterateDocs(tableName: string, callback: (doc: GenericDocument) => void) {
     const isInTable = (id: string) => tableNameFromId(id) === tableName;
     const ids = new Set(Object.keys(this._documents).filter(isInTable));
     for (let i = 0; i < this._writes.length; i++) {
@@ -678,13 +596,6 @@ class DatabaseFake {
     }
   }
 
-  /**
-   * Resolves the query source: loads documents matching the source (table scan,
-   * index range, or search), sorts them, and returns along with the compiled
-   * operator filter function. This separates "rows entering the pipeline"
-   * (sortedDocs) from "rows exiting" (after filterFn), which is needed for
-   * maximumRowsRead tracking in paginate().
-   */
   private _resolveQuerySource(query: SerializedQuery): {
     sortedDocs: GenericDocument[];
     filterFn: (doc: GenericDocument) => boolean;
@@ -718,13 +629,12 @@ class DatabaseFake {
         } else {
           const indexes = this._schema?.tables.get(tableName)?.indexes;
           const index = indexes?.find(
-            ({ indexDescriptor }: { indexDescriptor: string }) =>
-              indexDescriptor === indexName,
+            ({ indexDescriptor }: { indexDescriptor: string }) => indexDescriptor === indexName,
           );
           if (index === undefined) {
             throw new Error(
               `Cannot use index "${indexName}" for table "${tableName}" because ` +
-                `it is not declared in the schema.`,
+                "it is not declared in the schema.",
             );
           }
           fields = index.fields.concat(["_creationTime", "_id"]);
@@ -734,9 +644,7 @@ class DatabaseFake {
         validateIndexRangeExpression(source, fields);
 
         this._iterateDocs(tableName, (doc) => {
-          if (
-            source.range.every((filter) => evaluateRangeFilter(doc, filter))
-          ) {
+          if (source.range.every((filter) => evaluateRangeFilter(doc, filter))) {
             results.push(doc);
           }
         });
@@ -745,9 +653,7 @@ class DatabaseFake {
       case "Search": {
         const [tableName] = source.indexName.split(".");
         this._iterateDocs(tableName, (doc) => {
-          if (
-            source.filters.every((filter) => evaluateSearchFilter(doc, filter))
-          ) {
+          if (source.filters.every((filter) => evaluateSearchFilter(doc, filter))) {
             results.push(doc);
           }
         });
@@ -758,15 +664,12 @@ class DatabaseFake {
     }
 
     const filters = query.operators
-      .filter(
-        (operator): operator is { filter: FilterJson } => "filter" in operator,
-      )
+      .filter((operator): operator is { filter: FilterJson } => "filter" in operator)
       .map((operator) => operator.filter);
 
     const limit =
-      query.operators.filter(
-        (operator): operator is { limit: number } => "limit" in operator,
-      )[0] ?? null;
+      query.operators.filter((operator): operator is { limit: number } => "limit" in operator)[0] ??
+      null;
 
     results.sort((a, b) => {
       const orderMultiplier = order === "asc" ? 1 : -1;
@@ -780,8 +683,7 @@ class DatabaseFake {
       return v * orderMultiplier;
     });
 
-    const filterFn = (doc: GenericDocument) =>
-      filters.every((f) => evaluateFilter(doc, f));
+    const filterFn = (doc: GenericDocument) => filters.every((f) => evaluateFilter(doc, f));
 
     return {
       sortedDocs: results,
@@ -816,13 +718,12 @@ class DatabaseFake {
     });
     const vectorIndexes = this._schema?.tables.get(tableName)?.vectorIndexes;
     const vectorIndex = vectorIndexes?.find(
-      ({ indexDescriptor }: { indexDescriptor: string }) =>
-        indexDescriptor === indexName,
+      ({ indexDescriptor }: { indexDescriptor: string }) => indexDescriptor === indexName,
     );
     if (vectorIndex === undefined) {
       throw new Error(
         `Cannot use vector index "${indexName}" for table "${tableName}" because ` +
-          `it is not declared in the schema.`,
+          "it is not declared in the schema.",
       );
     }
     const { vectorField } = vectorIndex;
@@ -837,18 +738,14 @@ class DatabaseFake {
   validateSchema() {
     this._schema?.tables.forEach((table, tableName) => {
       if (!isValidIdentifier(tableName)) {
-        throw new Error(
-          `Table names must be valid identifiers, got "${tableName}"`,
-        );
+        throw new Error(`Table names must be valid identifiers, got "${tableName}"`);
       }
 
       validateFieldNames(table.documentType);
 
       table.indexes.forEach(({ indexDescriptor }) => {
         if (!isValidIdentifier(indexDescriptor)) {
-          throw new Error(
-            `Index names must be valid identifiers, got "${indexDescriptor}"`,
-          );
+          throw new Error(`Index names must be valid identifiers, got "${indexDescriptor}"`);
         }
       });
     });
@@ -867,13 +764,6 @@ function tableNameFromId(id: string) {
   return id.slice(match[0].length);
 }
 
-// Reverses `serializeConvexErrorData` from `convex/server/impl/registration_impl`,
-// which `invokeFunction` applies to every ConvexError thrown from a Convex
-// function. In production the HTTP client deserializes `.data` via
-// `forwardErrorData` before callers see it, so an action catching a
-// `ConvexError` from `ctx.runMutation` receives the original object, not a
-// JSON string. Apply the same restoration whenever we catch an error from
-// `invokeMutation` / `invokeQuery` / `invokeAction`.
 function deserializeConvexErrorData(thrown: unknown) {
   if (
     typeof thrown === "object" &&
@@ -885,9 +775,7 @@ function deserializeConvexErrorData(thrown: unknown) {
       (thrown as { data: unknown }).data = jsonToConvex(
         JSON.parse((thrown as { data: string }).data),
       );
-    } catch {
-      // Data wasn't a serialized JSON string — leave it untouched.
-    }
+    } catch {}
   }
   return thrown;
 }
@@ -898,13 +786,10 @@ function isSimpleObject(value: unknown) {
   const isSimple =
     prototype === null ||
     prototype === Object.prototype ||
-    // Objects generated from other contexts (e.g. across Node.js `vm` modules) will not satisfy the previous
-    // conditions but are still simple objects.
     prototype?.constructor?.name === "Object";
   return isObject && isSimple;
 }
 
-// Commit timestamp placeholders are resolved to `i64::MAX` before commit.
 const MAX_COMMIT_TS = 2n ** 63n - 1n;
 
 function hasPendingValues(value: Value): boolean {
@@ -920,16 +805,11 @@ function hasPendingValues(value: Value): boolean {
   return false;
 }
 
-// The value as the transaction sees it before committing.
 function resolvePendingValues(value: Value): Value {
   return substituteCommitTs(value, MAX_COMMIT_TS);
 }
 
-// The value as it is committed.
-function resolveCommittedValues<T extends Value>(
-  value: T,
-  commitTs: bigint,
-): T {
+function resolveCommittedValues<T extends Value>(value: T, commitTs: bigint): T {
   return substituteCommitTs(value, commitTs);
 }
 
@@ -944,10 +824,7 @@ function substituteCommitTs<T extends Value>(value: T, commitTs: bigint): T {
     return value.map((v) => substituteCommitTs(v, commitTs)) as T;
   }
   return Object.fromEntries(
-    Object.entries(value as object).map(([k, v]) => [
-      k,
-      substituteCommitTs(v, commitTs),
-    ]),
+    Object.entries(value as object).map(([k, v]) => [k, substituteCommitTs(v, commitTs)]),
   ) as T;
 }
 
@@ -963,10 +840,7 @@ function evaluateFieldPath(fieldPath: string, document: any) {
   return result === undefined ? undefined : resolvePendingValues(result);
 }
 
-function evaluateFilter(
-  document: GenericDocument,
-  filter: any,
-): Value | undefined {
+function evaluateFilter(document: GenericDocument, filter: any): Value | undefined {
   if (filter.$eq !== undefined) {
     return (
       compareValues(
@@ -993,28 +867,16 @@ function evaluateFilter(
     return !evaluateFilter(document, filter.$not);
   }
   if (filter.$gt !== undefined) {
-    return (
-      evaluateFilter(document, filter.$gt[0])! >
-      evaluateFilter(document, filter.$gt[1])!
-    );
+    return evaluateFilter(document, filter.$gt[0])! > evaluateFilter(document, filter.$gt[1])!;
   }
   if (filter.$gte !== undefined) {
-    return (
-      evaluateFilter(document, filter.$gte[0])! >=
-      evaluateFilter(document, filter.$gte[1])!
-    );
+    return evaluateFilter(document, filter.$gte[0])! >= evaluateFilter(document, filter.$gte[1])!;
   }
   if (filter.$lt !== undefined) {
-    return (
-      evaluateFilter(document, filter.$lt[0])! <
-      evaluateFilter(document, filter.$lt[1])!
-    );
+    return evaluateFilter(document, filter.$lt[0])! < evaluateFilter(document, filter.$lt[1])!;
   }
   if (filter.$lte !== undefined) {
-    return (
-      evaluateFilter(document, filter.$lte[0])! <=
-      evaluateFilter(document, filter.$lte[1])!
-    );
+    return evaluateFilter(document, filter.$lte[0])! <= evaluateFilter(document, filter.$lte[1])!;
   }
   if (filter.$add !== undefined) {
     return (
@@ -1055,10 +917,7 @@ function evaluateFilter(
   throw new Error(`not implemented: ${JSON.stringify(filter)}`);
 }
 
-function evaluateRangeFilter(
-  document: GenericDocument,
-  expr: SerializedRangeExpression,
-) {
+function evaluateRangeFilter(document: GenericDocument, expr: SerializedRangeExpression) {
   const result = evaluateFieldPath(expr.fieldPath, document);
   const value = evaluateQueryValue(expr.value);
   switch (expr.type) {
@@ -1075,7 +934,6 @@ function evaluateRangeFilter(
   }
 }
 
-// A value used as a written field.
 function evaluateValue(value: JSONValue) {
   if (typeof value === "object" && value !== null && "$undefined" in value) {
     return undefined;
@@ -1083,18 +941,12 @@ function evaluateValue(value: JSONValue) {
   return jsonToConvex(value);
 }
 
-// A value used as a query bound or literal.
 function evaluateQueryValue(value: JSONValue) {
   const evaluatedValue = evaluateValue(value);
-  return evaluatedValue === undefined
-    ? undefined
-    : resolvePendingValues(evaluatedValue);
+  return evaluatedValue === undefined ? undefined : resolvePendingValues(evaluatedValue);
 }
 
-function evaluateSearchFilter(
-  document: GenericDocument,
-  filter: SerializedSearchFilter,
-) {
+function evaluateSearchFilter(document: GenericDocument, filter: SerializedSearchFilter) {
   const result = evaluateFieldPath(filter.fieldPath, document);
   switch (filter.type) {
     case "Eq":
@@ -1107,9 +959,7 @@ function evaluateSearchFilter(
         .toLowerCase()
         .split(/\s+/)
         .filter((term) => term.length > 0);
-      const documentWords = result
-        .split(/\s+/)
-        .map((word) => word.toLowerCase());
+      const documentWords = result.split(/\s+/).map((word) => word.toLowerCase());
       return queryTerms.some((queryTerm) =>
         documentWords.some((word) => word.startsWith(queryTerm)),
       );
@@ -1130,27 +980,18 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 
   if (normA === 0 || normB === 0) {
     return 0;
-  } else {
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// An index range expression is always a chained list of:
-//
-// 0 or more equality expressions defined with .eq.
-// [Optionally] A lower bound expression defined with .gt or .gte.
-// [Optionally] An upper bound expression defined with .lt or .lte.
-function validateIndexRangeExpression(
-  source: Source & { type: "IndexRange" },
-  fields: string[],
-) {
+function validateIndexRangeExpression(source: Source & { type: "IndexRange" }, fields: string[]) {
   let fieldIndex = 0;
   let state: "eq" | "gt" | "lt" | "done" = "eq";
   for (const [filterIndex, filter] of source.range.entries()) {
     if (state === "done") {
       throw new Error(
-        `Incorrect operator used in \`withIndex\`, cannot chain ` +
-          `more operators after both \`.gt\` and \`.lt\` were already used, ` +
+        "Incorrect operator used in `withIndex`, cannot chain " +
+          "more operators after both `.gt` and `.lt` were already used, " +
           `got \`${printIndexOperator(filter)}\`.`,
       );
     }
@@ -1163,7 +1004,6 @@ function validateIndexRangeExpression(
           : "eq";
 
     switch (`${state}|${filterType}`) {
-      // Allow to operate on the current indexed field
       case "eq|eq":
       case "eq|gt":
       case "eq|lt":
@@ -1173,11 +1013,10 @@ function validateIndexRangeExpression(
           continue;
         }
         throw new Error(
-          `Incorrect field used in \`withIndex\`, ` +
+          "Incorrect field used in `withIndex`, " +
             `expected "${fields[fieldIndex]}", got "${filter.fieldPath}"`,
         );
 
-      // Allow to operate on the previous field (gt and lt must operate on same field)
       case "lt|gt":
       case "gt|lt":
         if (fieldIndex > 0 && filter.fieldPath === fields[fieldIndex - 1]) {
@@ -1185,14 +1024,14 @@ function validateIndexRangeExpression(
           continue;
         }
         throw new Error(
-          `Incorrect field used in \`withIndex\`, ` +
-            `\`.gt\` and \`.lt\` must operate on the same field, ` +
+          "Incorrect field used in `withIndex`, " +
+            "`.gt` and `.lt` must operate on the same field, " +
             `expected "${fields[fieldIndex - 1]}", got "${filter.fieldPath}"`,
         );
 
       default:
         throw new Error(
-          `Incorrect operator used in \`withIndex\`, ` +
+          "Incorrect operator used in `withIndex`, " +
             `cannot chain \`.${filter.type.toLowerCase()}()\` ` +
             `after \`.${source.range[filterIndex - 1].type.toLowerCase()}()\``,
         );
@@ -1208,9 +1047,7 @@ function validateFieldNames(validator: ValidatorJSON) {
   if (validator.type === "object") {
     Object.keys(validator.value).forEach((fieldName) => {
       if (!isValidIdentifier(fieldName)) {
-        throw new Error(
-          `Field names must be valid identifiers, got "${fieldName}"`,
-        );
+        throw new Error(`Field names must be valid identifiers, got "${fieldName}"`);
       }
     });
   }
@@ -1256,52 +1093,37 @@ function validateValidator(validator: ValidatorJSON, value: any) {
     }
     case "number": {
       if (typeof value !== "number") {
-        throw new Error(
-          `Validator error: Expected \`number\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`number\`, got \`${value}\``);
       }
       return;
     }
     case "bigint": {
       if (typeof value !== "bigint") {
-        throw new Error(
-          `Validator error: Expected \`bigint\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`bigint\`, got \`${value}\``);
       }
       return;
     }
     case "commitTs": {
-      if (
-        typeof value !== "bigint" &&
-        !(value instanceof CommitTsPlaceholder)
-      ) {
-        throw new Error(
-          `Validator error: Expected \`v.commitTs()\`, got \`${value}\``,
-        );
+      if (typeof value !== "bigint" && !(value instanceof CommitTsPlaceholder)) {
+        throw new Error(`Validator error: Expected \`v.commitTs()\`, got \`${value}\``);
       }
       return;
     }
     case "boolean": {
       if (typeof value !== "boolean") {
-        throw new Error(
-          `Validator error: Expected \`boolean\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`boolean\`, got \`${value}\``);
       }
       return;
     }
     case "string": {
       if (typeof value !== "string") {
-        throw new Error(
-          `Validator error: Expected \`string\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`string\`, got \`${value}\``);
       }
       return;
     }
     case "bytes": {
       if (!(value instanceof ArrayBuffer)) {
-        throw new Error(
-          `Validator error: Expected \`ArrayBuffer\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`ArrayBuffer\`, got \`${value}\``);
       }
       return;
     }
@@ -1311,18 +1133,14 @@ function validateValidator(validator: ValidatorJSON, value: any) {
     case "literal": {
       if (value !== validator.value) {
         throw new Error(
-          `Validator error: Expected \`${
-            validator.value as any
-          }\`, got \`${value}\``,
+          `Validator error: Expected \`${validator.value as any}\`, got \`${value}\``,
         );
       }
       return;
     }
     case "id": {
       if (typeof value !== "string") {
-        throw new Error(
-          `Validator error: Expected \`string\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`string\`, got \`${value}\``);
       }
       if (tableNameFromId(value) !== validator.tableName) {
         throw new Error(
@@ -1333,9 +1151,7 @@ function validateValidator(validator: ValidatorJSON, value: any) {
     }
     case "array": {
       if (!Array.isArray(value)) {
-        throw new Error(
-          `Validator error: Expected \`Array\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`Array\`, got \`${value}\``);
       }
       for (const v of value) {
         validateValidator(validator.value, v);
@@ -1349,9 +1165,7 @@ function validateValidator(validator: ValidatorJSON, value: any) {
           validateValidator(v, value);
           isValid = true;
           break;
-        } catch {
-          // Ignore
-        }
+        } catch {}
       }
       if (!isValid) {
         throw new Error(
@@ -1362,23 +1176,17 @@ function validateValidator(validator: ValidatorJSON, value: any) {
     }
     case "object": {
       if (typeof value !== "object") {
-        throw new Error(
-          `Validator error: Expected \`object\`, got \`${value}\``,
-        );
+        throw new Error(`Validator error: Expected \`object\`, got \`${value}\``);
       }
       if (!isSimpleObject(value)) {
         throw new Error(
           `Validator error: Expected a plain old JavaScript \`object\`, got \`${value}\``,
         );
       }
-      for (const [k, { fieldType, optional }] of Object.entries(
-        validator.value,
-      )) {
+      for (const [k, { fieldType, optional }] of Object.entries(validator.value)) {
         if (value[k] === undefined) {
           if (!optional) {
-            throw new Error(
-              `Validator error: Missing required field \`${k}\` in object`,
-            );
+            throw new Error(`Validator error: Missing required field \`${k}\` in object`);
           }
         } else {
           validateValidator(fieldType, value[k]);
@@ -1386,9 +1194,7 @@ function validateValidator(validator: ValidatorJSON, value: any) {
       }
       for (const k of Object.keys(value)) {
         if (validator.value[k] === undefined) {
-          throw new Error(
-            `Validator error: Unexpected field \`${k}\` in object`,
-          );
+          throw new Error(`Validator error: Unexpected field \`${k}\` in object`);
         }
       }
       return;
@@ -1402,9 +1208,7 @@ function syscallImpl() {
     const db = getDb();
     switch (op) {
       case "1.0/getSnapshotTs": {
-        return JSON.stringify(
-          convexToJson(getTransactionManager().getSnapshotTs()),
-        );
+        return JSON.stringify(convexToJson(getTransactionManager().getSnapshotTs()));
       }
       case "1.0/queryStream": {
         const { query } = args;
@@ -1433,8 +1237,6 @@ function syscallImpl() {
 class AuthFake {
   constructor(
     private _userIdentity: any = null,
-    // The JWT the request was authenticated with, mirroring what the backend
-    // derives the identity from. `null` for unauthenticated requests.
     private _token: string | null = null,
   ) {}
 
@@ -1447,9 +1249,6 @@ class AuthFake {
   }
 }
 
-// Maps the `UserIdentity` attributes to the JWT claims they are derived from,
-// as documented on `UserIdentity`. `tokenIdentifier` is left out because it is
-// computed by the backend from `iss` and `sub` rather than being a claim.
 const JWT_CLAIM_BY_IDENTITY_ATTRIBUTE: Record<string, string> = {
   subject: "sub",
   issuer: "iss",
@@ -1478,28 +1277,20 @@ function base64UrlEncode(value: string) {
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
   }
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// Builds the token `withIdentity` pretends the request was authenticated with.
-// Real tokens are signed by an identity provider; this one is unsecured
-// (`"alg": "none"`, empty signature).
 function createTestJwt(identity: Record<string, any>) {
   const claims: Record<string, any> = Object.create(null);
   for (const [attribute, value] of Object.entries(identity)) {
     if (value === undefined || attribute === "tokenIdentifier") {
       continue;
     }
-    // Custom claims are used as is, known attributes use their claim name.
     const claimName = Object.hasOwn(JWT_CLAIM_BY_IDENTITY_ATTRIBUTE, attribute)
       ? JWT_CLAIM_BY_IDENTITY_ATTRIBUTE[attribute]
       : attribute;
     claims[claimName] = value;
   }
-  // The identity provider always determines who the user is.
   claims.iss = identity.issuer;
   claims.sub = identity.subject;
   const header = base64UrlEncode(JSON.stringify({ alg: "none", typ: "JWT" }));
@@ -1507,10 +1298,6 @@ function createTestJwt(identity: Record<string, any>) {
   return `${header}.${payload}.`;
 }
 
-// Runs a function that was scheduled, moving its `_scheduled_functions`
-// document through the job states around calling it. Scheduled functions run
-// without auth context, even if they were scheduled from an authenticated
-// function.
 async function runScheduledFunction({
   db,
   jobId,
@@ -1526,9 +1313,6 @@ async function runScheduledFunction({
   args: Value;
   name: string;
 }) {
-  // A scheduled function is its own request: it doesn't inherit the request
-  // metadata of whoever scheduled it, and it identifies itself through its
-  // job ID.
   const requestMetadata: RequestMetadataFake = {
     ip: null,
     userAgent: null,
@@ -1538,27 +1322,22 @@ async function runScheduledFunction({
   };
   await requestMetadataStorage.run(requestMetadata, () =>
     authStorage.run(new AuthFake(), async () => {
-      const canceled = await withAuth().runInComponent(
-        componentPath,
-        async () => {
-          const job = db.get("_scheduled_functions", jobId) as
-            | ScheduledFunction
-            | undefined;
-          if (!job) return true;
-          if (job.state.kind === "canceled") {
-            return true;
-          }
-          if (job.state.kind !== "pending") {
-            throw new Error(
-              `\`convexTest\` invariant error: Unexpected scheduled function state when starting it: ${job.state.kind}`,
-            );
-          }
-          db.patch("_scheduled_functions", jobId, {
-            state: { kind: "inProgress" },
-          });
-          return false;
-        },
-      );
+      const canceled = await withAuth().runInComponent(componentPath, async () => {
+        const job = db.get("_scheduled_functions", jobId) as ScheduledFunction | undefined;
+        if (!job) return true;
+        if (job.state.kind === "canceled") {
+          return true;
+        }
+        if (job.state.kind !== "pending") {
+          throw new Error(
+            `\`convexTest\` invariant error: Unexpected scheduled function state when starting it: ${job.state.kind}`,
+          );
+        }
+        db.patch("_scheduled_functions", jobId, {
+          state: { kind: "inProgress" },
+        });
+        return false;
+      });
       if (canceled) {
         return;
       }
@@ -1616,24 +1395,12 @@ function asyncSyscallImpl() {
         return JSON.stringify(convexToJson({ value, done }));
       }
       case "1.0/queryPage": {
-        const {
-          query,
-          cursor,
-          endCursor,
-          pageSize,
-          maximumRowsRead,
-          maximumBytesRead,
-        } = args;
-        // Like in a deployed backend, components can't use `.paginate()`.
+        const { query, cursor, endCursor, pageSize, maximumRowsRead, maximumBytesRead } = args;
         if (getCurrentComponentPath() !== "") {
           throw new Error(
             "paginate() is only supported in the app. Learn more at https://docs.convex.dev/components/authoring#pagination",
           );
         }
-        // Convex only allows a single paginated query (`.paginate()`) per
-        // function execution. Multiple `.paginate()` calls pass in the test
-        // mock but fail at runtime in a deployed function, so always enforce
-        // the rule.
         const ctx = executionContextStorage.getStore();
         if (ctx) {
           ctx.paginatedQueries += 1;
@@ -1646,15 +1413,14 @@ function asyncSyscallImpl() {
             );
           }
         }
-        const { page, isDone, continueCursor, splitCursor, pageStatus } =
-          db.paginate({
-            query,
-            cursor,
-            endCursor,
-            pageSize,
-            maximumRowsRead,
-            maximumBytesRead,
-          });
+        const { page, isDone, continueCursor, splitCursor, pageStatus } = db.paginate({
+          query,
+          cursor,
+          endCursor,
+          pageSize,
+          maximumRowsRead,
+          maximumBytesRead,
+        });
         if (tracker) {
           tracker.trackIndexRange();
           for (const doc of page) {
@@ -1750,28 +1516,19 @@ function asyncSyscallImpl() {
       case "1.0/actions/query": {
         const { name, args: queryArgs } = args;
         return JSON.stringify(
-          convexToJson(
-            await withAuth().runQuery(makeFunctionReference(name), queryArgs),
-          ),
+          convexToJson(await withAuth().runQuery(makeFunctionReference(name), queryArgs)),
         );
       }
       case "1.0/actions/mutation": {
         const { name, args: mutationArgs } = args;
         return JSON.stringify(
-          convexToJson(
-            await withAuth().runMutation(
-              makeFunctionReference(name),
-              mutationArgs,
-            ),
-          ),
+          convexToJson(await withAuth().runMutation(makeFunctionReference(name), mutationArgs)),
         );
       }
       case "1.0/actions/action": {
         const { name, args: actionArgs } = args;
         return JSON.stringify(
-          convexToJson(
-            await withAuth().runAction(makeFunctionReference(name), actionArgs),
-          ),
+          convexToJson(await withAuth().runAction(makeFunctionReference(name), actionArgs)),
         );
       }
       case "1.0/runUdf": {
@@ -1791,40 +1548,24 @@ function asyncSyscallImpl() {
         });
         if (udfType === "query") {
           return JSON.stringify(
-            convexToJson(
-              await withAuth().queryFromPath(
-                functionPath,
-                udfArgs,
-                transactionLimits,
-              ),
-            ),
+            convexToJson(await withAuth().queryFromPath(functionPath, udfArgs, transactionLimits)),
           );
         }
         if (udfType === "snapshotQuery") {
           return JSON.stringify(
             convexToJson(
-              await withAuth().snapshotQueryFromPath(
-                functionPath,
-                udfArgs,
-                transactionLimits,
-              ),
+              await withAuth().snapshotQueryFromPath(functionPath, udfArgs, transactionLimits),
             ),
           );
         }
         if (udfType === "mutation") {
           return JSON.stringify(
             convexToJson(
-              await withAuth().mutationFromPath(
-                functionPath,
-                udfArgs,
-                transactionLimits,
-              ),
+              await withAuth().mutationFromPath(functionPath, udfArgs, transactionLimits),
             ),
           );
         }
-        throw new Error(
-          `\`convexTest\` does not support udf type: "${udfType}"`,
-        );
+        throw new Error(`\`convexTest\` does not support udf type: "${udfType}"`);
       }
       case "1.0/createFunctionHandle": {
         const { name, reference, functionHandle } = args;
@@ -1843,22 +1584,14 @@ function asyncSyscallImpl() {
         });
       }
       case "1.0/schedule": {
-        const {
-          name,
-          reference,
-          functionHandle,
-          args: fnArgs,
-          ts: tsInSecs,
-        } = args;
+        const { name, reference, functionHandle, args: fnArgs, ts: tsInSecs } = args;
         const functionAddress = { name, reference, functionHandle };
         const functionPath = getFunctionPathFromAddress(functionAddress);
-        // Convert args to a Convex value before storing them or passing them to the function
         const parsedArgs = jsonToConvex(fnArgs);
-        // Scheduled arguments cannot contain pending values
         if (hasPendingValues(parsedArgs)) {
           throw new Error(
             `Invalid arguments for "${functionPath.udfPath}": a scheduled ` +
-              `function cannot take an unresolved placeholder value.`,
+              "function cannot take an unresolved placeholder value.",
           );
         }
 
@@ -1871,14 +1604,8 @@ function asyncSyscallImpl() {
           state: { kind: "pending" },
         });
         const componentPath = getCurrentComponentPath();
-        // Capture the current test's ConvexGlobal so the scheduled
-        // function callback (which runs via setTimeout, outside the
-        // original ALS context) uses the correct test state.
         const capturedGlobal = getConvexGlobal();
         const scheduler = capturedGlobal.scheduler;
-        // Queue the setTimeout outside any nested-mutation ALS context so
-        // the scheduled function starts as a fresh top-level execution
-        // rather than inheriting a stale parent lock.
         nestedTxStorage.exit(() => {
           scheduler.timerScheduled();
           frameworkSetTimeout(
@@ -1918,8 +1645,6 @@ function asyncSyscallImpl() {
         const results = db.vectorSearch(
           indexName,
           vector,
-          // Probably an unintentional implementation in Convex
-          // where expressions is only a single expression
           expressions === null ? [] : [expressions],
           limit,
         );
@@ -1944,17 +1669,12 @@ function asyncSyscallImpl() {
           return JSON.stringify(null);
         }
         const { sha256 } = metadata;
-        // In the real backend the URL ofc isn't the sha
-        const url =
-          "https://some-deployment.convex.cloud/api/storage/" +
-          (sha256 as string);
+        const url = "https://some-deployment.convex.cloud/api/storage/" + (sha256 as string);
         return JSON.stringify(convexToJson(url));
       }
       case "1.0/storageGenerateUploadUrl": {
-        // In the real backend the token is cryptographically secure
         const url =
-          "https://some-deployment.convex.cloud/api/storage/upload?token=" +
-          Math.random();
+          "https://some-deployment.convex.cloud/api/storage/upload?token=" + Math.random();
         return JSON.stringify(convexToJson(url));
       }
       case "1.0/count": {
@@ -1978,9 +1698,7 @@ function asyncSyscallImpl() {
         return JSON.stringify(null);
       }
       default: {
-        throw new Error(
-          `\`convexTest\` does not support async syscall: "${op}"`,
-        );
+        throw new Error(`\`convexTest\` does not support async syscall: "${op}"`);
       }
     }
   };
@@ -2012,16 +1730,14 @@ function jsSyscallImpl() {
   };
 }
 
-// If we're in action, wrap the write in a transaction.
 async function writeToDatabase<T>(impl: (db: DatabaseFake) => Promise<T>) {
   const db = getDb();
   if (!getTransactionManager().isInTransaction()) {
     return await withAuth().run(async () => {
       return await impl(db);
     });
-  } else {
-    return await impl(db);
   }
+  return await impl(db);
 }
 
 async function blobSha(blob: Blob) {
@@ -2031,139 +1747,54 @@ async function blobSha(blob: Blob) {
   return btoa(String.fromCharCode(...hashArray));
 }
 
-export type TestConvex<SchemaDef extends SchemaDefinition<any, boolean>> =
-  TestConvexRoot<DataModelFromSchemaDefinition<SchemaDef>>;
+export type TestConvex<SchemaDef extends SchemaDefinition<any, boolean>> = TestConvexRoot<
+  DataModelFromSchemaDefinition<SchemaDef>
+>;
 
-/**
- * A component registration function that can return its generated `ComponentApi`.
- *
- * Returning typed component references lets `defineTestApp` infer the component
- * API. If the component doesn't export a `register` function from their /test
- * entrypoint that returns the ComponentApi, it can be cast like
- * `{ register: componentTest.register as ComponentRegistration<ComponentApi> }`.
- *
- * Note: `defineTestApp` does not use the returned value.
- */
-export type ComponentRegistration<Api> = (
-  t: TestConvexRoot<any>,
-  name: string,
-) => Api | void;
+export type ComponentRegistration<Api> = (t: TestConvexRoot<any>, name: string) => Api | void;
 
-// Match generated ComponentApi<Name> references for each named installation.
 type ComponentApiForName<Api, Name extends string> =
-  Api extends FunctionReference<
-    infer Type,
-    infer Visibility,
-    infer Args,
-    infer ReturnType
-  >
+  Api extends FunctionReference<infer Type, infer Visibility, infer Args, infer ReturnType>
     ? FunctionReference<Type, Visibility, Args, ReturnType, Name>
     : { [Key in keyof Api]: ComponentApiForName<Api[Key], Name> };
 
-type ComponentRegistrations = Record<
-  string,
-  { register: ComponentRegistration<any> }
->;
+type ComponentRegistrations = Record<string, { register: ComponentRegistration<any> }>;
 
 type RegisteredComponents<Components extends ComponentRegistrations> = {
-  [Name in keyof Components]: Components[Name]["register"] extends ComponentRegistration<
-    infer Api
-  >
+  [Name in keyof Components]: Components[Name]["register"] extends ComponentRegistration<infer Api>
     ? ComponentApiForName<Api, Name & string>
     : never;
 };
 
-/** Schema-bound function builders for an in-memory test application. */
 export type TestApp<
   SchemaDef extends SchemaDefinition<any, boolean>,
   Components extends ComponentRegistrations = Record<never, never>,
 > = {
-  /** Typed references to the configured component instances. */
   components: RegisteredComponents<Components>;
   query: QueryBuilder<DataModelFromSchemaDefinition<SchemaDef>, "public">;
-  internalQuery: QueryBuilder<
-    DataModelFromSchemaDefinition<SchemaDef>,
-    "internal"
-  >;
+  internalQuery: QueryBuilder<DataModelFromSchemaDefinition<SchemaDef>, "internal">;
   mutation: MutationBuilder<DataModelFromSchemaDefinition<SchemaDef>, "public">;
-  internalMutation: MutationBuilder<
-    DataModelFromSchemaDefinition<SchemaDef>,
-    "internal"
-  >;
+  internalMutation: MutationBuilder<DataModelFromSchemaDefinition<SchemaDef>, "internal">;
   action: ActionBuilder<DataModelFromSchemaDefinition<SchemaDef>, "public">;
-  internalAction: ActionBuilder<
-    DataModelFromSchemaDefinition<SchemaDef>,
-    "internal"
-  >;
-  /**
-   * Define function modules by their paths, e.g. `test` or `test/callbacks`,
-   * without a leading `./` or file extension. Values are module exports,
-   * rather than the import functions returned by `import.meta.glob`.
-   *
-   * References have the same types and behavior as generated Convex APIs.
-   * Public functions appear in `api` and internal functions in `internal`.
-   * Handlers referencing this API may need explicit return type annotations
-   * to break TypeScript inference cycles.
-   */
+  internalAction: ActionBuilder<DataModelFromSchemaDefinition<SchemaDef>, "internal">;
   defineModules<Modules extends Record<string, object>>(
     this: void,
     modules: Modules,
   ): TestAppDefinition<SchemaDef, Modules>;
 };
 
-/** Typed function references and a factory for fresh test instances. */
 export type TestAppDefinition<
   SchemaDef extends SchemaDefinition<any, boolean>,
   Modules extends Record<string, object>,
 > = {
   api: FilterApi<ApiFromModules<Modules>, FunctionReference<any, "public">>;
-  internal: FilterApi<
-    ApiFromModules<Modules>,
-    FunctionReference<any, "internal">
-  >;
-  /**
-   * Create fresh test state and register the configured components. Additional
-   * components can be registered using their helpers or `t.registerComponent`.
-   * `transactionLimits` has the same meaning as in `convexTest`.
-   */
+  internal: FilterApi<ApiFromModules<Modules>, FunctionReference<any, "internal">>;
   createTest(
     this: void,
     options?: { transactionLimits?: Partial<TransactionMetrics> | boolean },
   ): TestConvex<SchemaDef>;
 };
 
-/**
- * Define an in-memory test application without generated files.
- *
- * The returned function builders are typed against `schema`. Pass modules of
- * registered functions to `defineModules` to get typed `api` and `internal`
- * references and a `createTest` factory. Each call to `createTest` creates fresh
- * test state and returns a normal {@link TestConvex}, which can be passed to
- * component testing helpers such as `componentTest.register(t)`.
- *
- * Optional `components` map keys are instance names. Each helper's `register`
- * function runs on every `createTest()` call. Helpers returning `ComponentApi`
- * provide typed references in `app.components`. Helpers returning `void` can be
- * cast to {@link ComponentRegistration} to supply their API type.
- *
- * @example
- * const app = defineTestApp({
- *   schema,
- *   components: { sampleComponent: sampleComponentTest },
- * });
- * const { api, createTest } = app.defineModules({
- *   test: {
- *     bar: app.mutation({
- *       args: { text: v.string() },
- *       returns: v.id("messages"),
- *       handler: async (ctx, args) => ctx.db.insert("messages", args),
- *     }),
- *   },
- * });
- * const t = createTest();
- * await t.mutation(api.test.bar, { text: "hello" });
- * await t.query(app.components.sampleComponent.public.count, { name: "beans" });
- */
 export function defineTestApp<
   SchemaDef extends SchemaDefinition<any, boolean>,
   Components extends ComponentRegistrations = Record<never, never>,
@@ -2202,22 +1833,12 @@ export function defineTestApp<
       };
       const fullApi = anyApi as unknown as ApiFromModules<Modules>;
       return {
-        api: filterApi<typeof fullApi, FunctionReference<any, "public">>(
-          fullApi,
-        ),
-        internal: filterApi<typeof fullApi, FunctionReference<any, "internal">>(
-          fullApi,
-        ),
+        api: filterApi<typeof fullApi, FunctionReference<any, "public">>(fullApi),
+        internal: filterApi<typeof fullApi, FunctionReference<any, "internal">>(fullApi),
         createTest(
-          options: {
-            transactionLimits?: Partial<TransactionMetrics> | boolean;
-          } = {},
+          options: { transactionLimits?: Partial<TransactionMetrics> | boolean } = {},
         ): TestConvex<SchemaDef> {
-          const t = createConvexTest(
-            schema,
-            loadModule,
-            options.transactionLimits ?? false,
-          );
+          const t = createConvexTest(schema, loadModule, options.transactionLimits ?? false);
           for (const [name, registration] of registrations) {
             const result = registration.register(t, name);
             if (typeof result?.then === "function") {
@@ -2235,15 +1856,6 @@ export function defineTestApp<
 }
 
 export type TestConvexForDataModel<DataModel extends GenericDataModel> = {
-  /**
-   * Call a public or internal query, or run an inline query function.
-   *
-   * @param query A {@link FunctionReference} for the query, or an inline
-   *   async function that receives a query context.
-   * @param args  An arguments object for the query. If this is omitted,
-   *   the arguments will be `{}`. Not used for inline functions.
-   * @returns A `Promise` of the query's result.
-   */
   query: <
     QueryOrFunc extends
       | FunctionReference<"query", any>
@@ -2261,15 +1873,6 @@ export type TestConvexForDataModel<DataModel extends GenericDataModel> = {
         : never
   >;
 
-  /**
-   * Call a public or internal mutation, or run an inline mutation function.
-   *
-   * @param mutation A {@link FunctionReference} for the mutation, or an inline
-   *   async function that receives a mutation context.
-   * @param args  An arguments object for the mutation. If this is omitted,
-   *   the arguments will be `{}`. Not used for inline functions.
-   * @returns A `Promise` of the mutation's result.
-   */
   mutation: <
     MutationOrFunc extends
       | FunctionReference<"mutation", any>
@@ -2287,15 +1890,6 @@ export type TestConvexForDataModel<DataModel extends GenericDataModel> = {
         : never
   >;
 
-  /**
-   * Call a public or internal action, or run an inline action function.
-   *
-   * @param action A {@link FunctionReference} for the action, or an inline
-   *   async function that receives an action context.
-   * @param args  An arguments object for the action. If this is omitted,
-   *   the arguments will be `{}`. Not used for inline functions.
-   * @returns A `Promise` of the action's result.
-   */
   action: <
     ActionOrFunc extends
       | FunctionReference<"action", any>
@@ -2313,119 +1907,25 @@ export type TestConvexForDataModel<DataModel extends GenericDataModel> = {
         : never
   >;
 
-  /**
-   * Read from and write to the mock backend.
-   *
-   * The callback runs in a transaction, so `fetch` and timers are unavailable.
-   * Perform setup that needs them in the test body before calling `run`.
-   *
-   * @param func The async function that reads or writes to the mock backend.
-   *   It receives a ctx as its first argument that conforms to
-   *   {@link GenericMutationCtx},
-   *   so it can be passed to functions that expect either context, use file
-   *   storage, etc.
-   * @returns A `Promise` of the function's result.
-   */
   run: <Output>(
     func: (
-      ctx: GenericMutationCtx<DataModel> &
-        Pick<
-          GenericActionCtx<DataModel>,
-          "storage"
-          // ActionCtx support was added in 0.0.40, removed in 0.0.41, should be added back in the future.
-          // | "runAction"
-          // | "vectorSearch"
-        >,
+      ctx: GenericMutationCtx<DataModel> & Pick<GenericActionCtx<DataModel>, "storage">,
     ) => Promise<Output>,
   ) => Promise<Output>;
 
-  /**
-   * Call an HTTP action.
-   *
-   * @param path The request URL's path and optional query and fragment.
-   * @param init Standard `fetch` options.
-   */
   fetch(pathQueryFragment: string, init?: RequestInit): Promise<Response>;
 
-  /**
-   * Wait for all scheduled functions currently in the "inProgress" state
-   * to either finish successfully or fail.
-   *
-   * Use in combination with `vi.useFakeTimers()` and `vi.runAllTimers()`
-   * to control precisely the execution of scheduled functions.
-   *
-   * Typically:
-   * 1. Use `vi.runAllTimers()` or similar to advance
-   *   time such that a function is scheduled.
-   * 2. Use `finishInProgressScheduledFunctions()` to wait for the function
-   *    to finish.
-   */
   finishInProgressScheduledFunctions: () => Promise<void>;
 
-  /**
-   * Wait for all currently scheduled functions and any functions they
-   * schedule to either finish successfully or fail.
-   *
-   * Use in combination with `vi.useFakeTimers()` to test scheduled functions.
-   *
-   * Fake timers only need to be active for this call: functions scheduled
-   * while real timers were active are drained too, as long as their
-   * scheduled time has already passed on the real clock (e.g. scheduled
-   * with `runAfter(0)`). Ones whose real-clock time hasn't arrived are
-   * skipped, since they cannot be forced to fire by advancing fake timers.
-   *
-   * @param advanceTimers Function that advances timers,
-   *   usually `vi.runAllTimers`. This function will be called in a loop
-   *   with `finishInProgressScheduledFunctions()`.
-   * @param maxIterations Optional maximum number of iterations to run
-   *   scheduled functions. If not provided, defaults to 100. This prevents
-   *   infinite loops if scheduled functions keep scheduling more functions.
-   */
-  finishAllScheduledFunctions: (
-    advanceTimers: () => void,
-    maxIterations?: number,
-  ) => Promise<void>;
+  finishAllScheduledFunctions: (advanceTimers: () => void, maxIterations?: number) => Promise<void>;
 
-  /**
-   * To test functions which depend on the current authenticated user identity
-   * you can create a version of the `t` accessor with given user identity
-   * attributes.
-   *
-   * The instance this is called on is not affected, and it is possible to call
-   * `withIdentity` on the returned value again to call functions with a new identity.
-   *
-   * @param identity A subset of {@link UserIdentity} attributes. If you
-   *   don't provide `issuer`, `subject` or `tokenIdentifier` they are
-   *   generated automatically.
-   */
-  withIdentity(
-    identity: Partial<UserIdentity>,
-  ): TestConvexForDataModel<DataModel>;
-  /**
-   * To test functions which depend on the metadata of the request that
-   * triggered them, available via `ctx.meta.getRequestMetadata()`, you can
-   * create a version of the `t` accessor with a given IP address and user
-   * agent.
-   *
-   * Attributes that aren't provided are `null`, and calling this method again
-   * replaces both of them.
-   *
-   * @param metadata The `ip` and `userAgent` of the request.
-   */
+  withIdentity(identity: Partial<UserIdentity>): TestConvexForDataModel<DataModel>;
   withRequestMetadata(
     metadata: Partial<Pick<RequestMetadata, "ip" | "userAgent">>,
   ): TestConvexForDataModel<DataModel>;
 };
 
-/**
- * The accessor returned by {@link convexTest}. In addition to running
- * functions, it can register components.
- */
 export type TestConvexRoot<DataModel extends GenericDataModel> = {
-  /**
-   * Register a component, so that the functions of the app under test can call
-   * it.
-   */
   registerComponent: (
     componentPath: string,
     schema: SchemaDefinition<GenericSchema, boolean>,
@@ -2433,19 +1933,13 @@ export type TestConvexRoot<DataModel extends GenericDataModel> = {
   ) => void;
 } & TestConvexForDataModel<DataModel>;
 
-/**
- * @deprecated Use {@link TestConvexRoot} instead.
- */
-export type TestConvexForDataModelAndIdentity<
-  DataModel extends GenericDataModel,
-> = TestConvexRoot<DataModel>;
+export type TestConvexForDataModelAndIdentity<DataModel extends GenericDataModel> =
+  TestConvexRoot<DataModel>;
 
 function getComponentInfo(componentPath: string): ComponentInfo {
   const convex = getConvexGlobal();
   if (convex.components[componentPath] === undefined) {
-    throw new Error(
-      `Component "${componentPath}" is not registered. Call "t.registerComponent".`,
-    );
+    throw new Error(`Component "${componentPath}" is not registered. Call "t.registerComponent".`);
   }
   return convex.components[componentPath];
 }
@@ -2463,9 +1957,7 @@ function getTransactionManager() {
 }
 
 function getCurrentComponentPath() {
-  return (
-    executionContextStorage.getStore()?.componentPath ?? ROOT_COMPONENT_PATH
-  );
+  return executionContextStorage.getStore()?.componentPath ?? ROOT_COMPONENT_PATH;
 }
 
 function getModules() {
@@ -2485,15 +1977,9 @@ function getSyscalls() {
 
 function moduleCache(specifiedModules?: Record<string, () => Promise<any>>) {
   const modules = specifiedModules ?? import.meta.glob("./convex/**/*.*s");
-  const prefix = findModulesRoot(
-    Object.keys(modules),
-    specifiedModules !== undefined,
-  );
+  const prefix = findModulesRoot(Object.keys(modules), specifiedModules !== undefined);
   const modulesWithoutExtension = Object.fromEntries(
-    Object.entries(modules).map(([path, module]) => [
-      path.replace(/\.[^.]+$/, ""),
-      module,
-    ]),
+    Object.entries(modules).map(([path, module]) => [path.replace(/\.[^.]+$/, ""), module]),
   );
   return async (path: string) => {
     const module = modulesWithoutExtension[prefix + path];
@@ -2505,9 +1991,7 @@ function moduleCache(specifiedModules?: Record<string, () => Promise<any>>) {
 }
 
 function findModulesRoot(modulesPaths: string[], userProvidedModules: boolean) {
-  const generatedFilePath = modulesPaths.find((path) =>
-    path.includes("_generated"),
-  );
+  const generatedFilePath = modulesPaths.find((path) => path.includes("_generated"));
   if (generatedFilePath !== undefined) {
     return generatedFilePath.split("_generated", 2)[0];
   }
@@ -2516,8 +2000,7 @@ function findModulesRoot(modulesPaths: string[], userProvidedModules: boolean) {
     'Could not find the "_generated" directory, make sure to run ' +
       "`npx convex dev` or `npx convex codegen`. " +
       (userProvidedModules
-        ? "Make sure your `import.meta.glob` includes the files in the " +
-          '"_generated" directory'
+        ? "Make sure your `import.meta.glob` includes the files in the " + '"_generated" directory'
         : "If your Convex functions aren't defined in a directory " +
           'called "convex" sibling to your node_modules, ' +
           "provide the second argument to `convexTest`"),
@@ -2530,9 +2013,7 @@ type ComponentInfo = {
 };
 
 type FunctionPath = {
-  // e.g. "aggregate"
   componentPath: string;
-  // e.g. "messages:list"
   udfPath: string;
 };
 
@@ -2542,9 +2023,7 @@ type ExecutionContext = {
   componentPath: string;
   udfPath: string;
   udfType: UdfType;
-  depth: number; // 0 = top-level, 1+ = nested
-  // Number of paginated queries (`.paginate()`) executed so far in this
-  // function execution. Convex only allows one per function invocation.
+  depth: number;
   paginatedQueries: number;
 };
 
@@ -2558,21 +2037,12 @@ type RequestMetadataFake = {
   authToken: string | null;
 };
 
-// The request metadata of the innermost top-level function execution. Nested
-// calls (including calls into components) inherit it, so it is only created
-// when a function is called from the test itself, and replaced when a
-// scheduled function starts.
 const requestMetadataStorage = new AsyncLocalStorage<RequestMetadataFake>();
 
-// The request attributes a test accessor was configured with, which only
-// apply to the functions the accessor itself calls.
 type RequestOptions = { ip: string | null; userAgent: string | null };
 
 const DEFAULT_REQUEST_OPTIONS: RequestOptions = { ip: null, userAgent: null };
 
-// Request IDs are internal bookkeeping. Generating them must not consume a
-// handler's mocked randomness, so they come from a counter instead of `crypto`
-// or `Math.random`. The prefix marks these as test-only IDs.
 let nextRequestId = 0;
 
 function newRequestId() {
@@ -2599,31 +2069,6 @@ function getConvexGlobal(): ConvexGlobal {
   return store;
 }
 
-/*
- * Globals that libraries (e.g. workflow engines) may override during a handler.
- * Each invocation gets its own AsyncLocalStorage context. Nested Convex calls
- * start from the test environment's globals, with their own runtime restrictions,
- * instead of inheriting the caller's overrides.
- *
- * Known limitation: isolation relies on the getters/setters installed below:
- * ✅ `globalThis.Math = replacement` calls the setter, isolating the replacement.
- * ❌ `delete globalThis.crypto` removes the getter/setter entirely.
- * ❌ `Object.defineProperty(globalThis, "Math", { value: replacement })` replaces
- *    the getter/setter without calling it, changing the global for all handlers.
- * ❌ `Math.random = replacement` changes a property of the shared Math object,
- *    without calling the setter for globalThis.Math.
- *
- * At handler entry we rewrap globals replaced by test setup (including
- * vi.stubGlobal), using the replacement as the shared default. Replacing or
- * deleting a property while a handler is running bypasses isolation, including
- * when another test changes its shared mocks.
- *
- * To work around this limitation, assign a replacement object to the global.
- * To make a global's value unavailable, assign undefined instead of using delete
- * (the property remains present). Only the globals listed below that are present
- * and configurable in the test environment can be isolated. Assignments outside
- * handlers change the shared test environment and must be restored by the test.
- */
 const PATCHABLE_GLOBALS = [
   "setTimeout",
   "clearTimeout",
@@ -2656,14 +2101,6 @@ const PATCHABLE_GLOBALS = [
 type GlobalOverrides = Record<string, unknown>;
 const globalOverridesStorage = new AsyncLocalStorage<GlobalOverrides>();
 
-// The framework's own scheduler needs setTimeout even when running inside a
-// transaction context where setTimeout is disallowed for user code. Exit the
-// override store before reading globalThis.setTimeout so we get the underlying
-// value (which honors vitest fake timers, since those replace the proxy
-// target rather than entering an ALS context). Registering the timer outside
-// the store also means the callback doesn't inherit the scheduling function's
-// overrides. Unlike `realSetTimeout`, this is fake-timer aware, so
-// scheduled functions fire when a test advances timers.
 function frameworkSetTimeout(
   cb: (...args: unknown[]) => void,
   ms?: number,
@@ -2671,16 +2108,12 @@ function frameworkSetTimeout(
   return globalOverridesStorage.exit(() => globalThis.setTimeout(cb, ms));
 }
 
-// Globals that the real Convex runtime does not provide inside queries and
-// mutations (transactions). Reading them is fine; calling them throws. Handlers
-// can assign to `globalThis.fetch` etc. — writes land
-// in the per-call ALS override map and replace the sentinel for that call.
 function disallowedInTransaction(name: string): (...args: unknown[]) => never {
   return () => {
     throw new Error(
       `\`${name}\` is not supported in Convex queries or mutations. ` +
-        `Move this code to an action; a mutation can start one with ` +
-        `\`ctx.scheduler.runAfter(0, ...)\`.`,
+        "Move this code to an action; a mutation can start one with " +
+        "`ctx.scheduler.runAfter(0, ...)`.",
     );
   };
 }
@@ -2695,31 +2128,18 @@ function transactionGlobalOverrides(): GlobalOverrides {
   };
 }
 
-// Remember every installed getter/setter pair, including older pairs that
-// vi.unstubAllGlobals may restore. Weak references let unused pairs be collected.
-const globalProxySetters = new WeakMap<
-  () => unknown,
-  (value: unknown) => void
->();
+const globalProxySetters = new WeakMap<() => unknown, (value: unknown) => void>();
 
-// Rewrap tracked globals replaced by test setup, preserving the replacement as
-// the default outside handlers. Keep these accessors installed between calls:
-// removing them when one async handler finishes would affect overlapping calls.
 function installGlobalProxies() {
   const g = globalThis as Record<string, unknown>;
 
   for (const key of PATCHABLE_GLOBALS) {
     if (!(key in g)) continue;
     const descriptor = Object.getOwnPropertyDescriptor(g, key);
-    const installedSetter =
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- Compare accessor identity without calling it.
-      descriptor?.get && globalProxySetters.get(descriptor.get);
+    const installedSetter = descriptor?.get && globalProxySetters.get(descriptor.get);
     if (installedSetter && installedSetter === descriptor.set) continue;
-    // Some environments or test setups make globals non-configurable.
-    // Those properties cannot be replaced with our accessors, even if writable.
     if (descriptor?.configurable === false) continue;
 
-    // Resolve inherited properties without evaluating getters during installation.
     let originalDescriptor = descriptor;
     for (
       let prototype = Object.getPrototypeOf(g);
@@ -2730,11 +2150,6 @@ function installGlobalProxies() {
     }
     if (!originalDescriptor) continue;
 
-    // Each installation owns a descriptor copy. Data properties use its value
-    // as mutable backing state; accessors delegate on each read/write with the
-    // global receiver and the reader's current context. Never read g[key] from
-    // our getter, which would recurse. Keeping older copies separate also lets
-    // vi.unstubAllGlobals restore the default from before a stub was installed.
     const defaultDescriptor = originalDescriptor;
     const get = () => {
       const store = globalOverridesStorage.getStore();
@@ -2764,24 +2179,15 @@ function installGlobalProxies() {
         enumerable: descriptor?.enumerable ?? false,
       });
       globalProxySetters.set(get, set);
-    } catch {
-      // Some environments may prevent replacing a global property.
-    }
+    } catch {}
   }
 }
 
-function runWithGlobalOverrides<T>(
-  overrides: GlobalOverrides,
-  handler: () => T,
-) {
+function runWithGlobalOverrides<T>(overrides: GlobalOverrides, handler: () => T) {
   installGlobalProxies();
   return globalOverridesStorage.run(overrides, handler);
 }
 
-// Install a permanent global proxy so the Convex runtime's
-// `Convex.syscall` / `Convex.asyncSyscall` / `Convex.jsSyscall`
-// always delegate to the current test's ALS context.
-// This avoids writing per-test state to the global.
 let _globalProxyInstalled = false;
 function ensureGlobalProxy() {
   if (_globalProxyInstalled) return;
@@ -2800,16 +2206,8 @@ function ensureGlobalProxy() {
   } as ConvexGlobal;
 }
 
-// Per-test scheduler state: tracks executions of scheduled functions that
-// have been fired (their setTimeout callback has run) but haven't yet
-// settled.
 class Scheduler {
   private _inFlight: Set<Promise<void>> = new Set();
-  // Number of setTimeouts registered for scheduled functions that haven't
-  // fired yet. Timers registered while real timers were active cannot be
-  // fired by advancing fake timers — they need real event loop turns —
-  // so `finishAllScheduledFunctions` uses this to know whether to keep
-  // yielding instead of returning early.
   private _pendingTimerCount = 0;
 
   timerScheduled() {
@@ -2844,39 +2242,18 @@ class Scheduler {
 }
 
 class TransactionManager {
-  // The DatabaseFake is used in the Convex global,
-  // and so it restricts `convexTest` to run one function
-  // at a time.
-  // We force sequential execution to make sure actions
-  // can run mutations in parallel.
   private _waitOnCurrentFunction: Promise<void> | null = null;
   private _markTransactionDone: (() => void) | null = null;
-  // Tracks bandwidth usage and enforces limits for the current top-level
-  // transaction (null when none is in progress). Like the per-component
-  // `DatabaseFake`, it owns a stack of nested transaction layers; we drive its
-  // `startTransaction` / `commit` / `rollback` in lockstep with the databases'.
   private _metricsTracker: TransactionMetricsTracker | null = null;
   private _limitsConfig: Partial<TransactionMetrics> | boolean;
-  // The latest committed transaction's timestamp, in Unix nanoseconds.
-  // Zero represents the initial empty database, before any commits.
-  private _lastCommitTs: bigint = 0n;
+  private _lastCommitTs = 0n;
 
   constructor(limitsConfig: Partial<TransactionMetrics> | boolean = false) {
     this._limitsConfig = limitsConfig;
   }
 
-  async begin(
-    isNested: boolean,
-    transactionLimits?: Partial<TransactionMetrics>,
-  ) {
-    // Take a lock only for the top-level of each transaction.
-    // Nested transactions are not isolated so if you `Promise.all` on multiple
-    // `ctx.runMutation` or `ctx.runQuery` calls, they won't be serialized.
+  async begin(isNested: boolean, transactionLimits?: Partial<TransactionMetrics>) {
     if (!isNested) {
-      // Note the loop is important, as the current promise might resolve and a
-      // new transaction could start before we get woken up.
-      // This is the standard pattern for condition variables:
-      // https://en.wikipedia.org/wiki/Monitor_(synchronization)
       while (this._waitOnCurrentFunction !== null) {
         await this._waitOnCurrentFunction;
       }
@@ -2892,38 +2269,26 @@ class TransactionManager {
     this._metricsTracker?.startTransaction(transactionLimits);
   }
 
-  // Used to distinguish between mutation and action execution
-  // environment.
   isInTransaction() {
     return this._waitOnCurrentFunction !== null;
   }
 
-  // The metrics tracker, or null when not inside a transaction.
   getMetricsTracker(): TransactionMetricsTracker | null {
     return this._metricsTracker;
   }
 
   getSnapshotTs(): bigint {
     if (!this.isInTransaction()) {
-      throw new Error(
-        "getSnapshotTs() can only be called from a query or mutation.",
-      );
+      throw new Error("getSnapshotTs() can only be called from a query or mutation.");
     }
-    // Top-level transactions are serialized and nested commits don't advance
-    // _lastCommitTs, so it remains the latest commit known at transaction start.
     return this._lastCommitTs;
   }
 
-  // Returns the transaction's commit timestamp, or null for a nested commit,
-  // whose writes stay pending until the outermost transaction commits.
   commit(isNested: boolean): bigint | null {
     let commitTs: bigint | null = null;
     if (!isNested) {
       const nowNanos = BigInt(Date.now()) * 1_000_000n;
-      // Assign a new timestamp only when committing the outermost transaction.
-      // Bump by one if the clock is frozen or has moved backwards.
-      commitTs =
-        nowNanos > this._lastCommitTs ? nowNanos : this._lastCommitTs + 1n;
+      commitTs = nowNanos > this._lastCommitTs ? nowNanos : this._lastCommitTs + 1n;
       this._lastCommitTs = commitTs;
     }
     const convex = getConvexGlobal();
@@ -2958,19 +2323,14 @@ class TransactionManager {
 
   stashWrites(): Map<string, Array<Record<DocumentId, StoredDocument | null>>> {
     const convex = getConvexGlobal();
-    const stashed = new Map<
-      string,
-      Array<Record<DocumentId, StoredDocument | null>>
-    >();
+    const stashed = new Map<string, Array<Record<DocumentId, StoredDocument | null>>>();
     for (const [path, component] of Object.entries(convex.components)) {
       stashed.set(path, component.db.stashWrites());
     }
     return stashed;
   }
 
-  restoreWrites(
-    stashed: Map<string, Array<Record<DocumentId, StoredDocument | null>>>,
-  ) {
+  restoreWrites(stashed: Map<string, Array<Record<DocumentId, StoredDocument | null>>>) {
     const convex = getConvexGlobal();
     for (const [path, writes] of stashed) {
       convex.components[path].db.restoreWrites(writes);
@@ -2978,50 +2338,12 @@ class TransactionManager {
   }
 }
 
-/**
- * Call this function at the start of each of your tests.
- *
- * @param schema The default export from your "schema.ts" file.
- * @param modules If you have a custom `functions` path
- *     in convex.json, provide the function modules map by calling
- *     `import.meta.glob("./**\/*.*s")` from a file at the root of
- *     your Convex functions directory.
- * @returns an object which is by convention stored in the `t` variable
- *   and which provides methods for exercising your Convex functions.
- */
 export function convexTest<Schema extends GenericSchema>(
   schema?: SchemaDefinition<Schema, boolean>,
-  // For example `import.meta.glob("./**/*.*s")`
   modules?: Record<string, () => Promise<any>>,
 ): TestConvex<SchemaDefinition<Schema, boolean>>;
-/**
- * Call this function at the start of each of your tests.
- *
- * @param options An optional configuration object with:
- *   - `schema`: The default export from your "schema.ts" file.
- *   - `modules`: If you have a custom `functions` path
- *     in convex.json, provide the function modules map by calling
- *     `import.meta.glob("./**\/*.*s")` from a file at the root of
- *     your Convex functions directory.
- *   - `transactionLimits`: Configure per-transaction bandwidth limits.
- *     - `false` (default): limits are not enforced
- *     - `true` or `{}`: enforce default Convex limits
- *     - `{ bytesRead: 1024 }`: override specific limits
- *
- * Regardless of `transactionLimits`, a single function execution may only run
- * one paginated query (`.paginate()`); calling it more than once throws,
- * matching the behavior of a deployed Convex backend.
- *
- * @returns an object which is by convention stored in the `t` variable
- *   and which provides methods for exercising your Convex functions.
- *
- * @example
- * const t = convexTest({ schema });
- * const t = convexTest({ schema, modules });
- */
 export function convexTest<Schema extends GenericSchema>(options: {
   schema?: SchemaDefinition<Schema, boolean>;
-  /** For example `import.meta.glob("./**\/*.*s")` */
   modules?: Record<string, () => Promise<any>>;
   transactionLimits?: Partial<TransactionMetrics> | boolean;
 }): TestConvex<SchemaDefinition<Schema, boolean>>;
@@ -3035,10 +2357,9 @@ export function convexTest<Schema extends GenericSchema>(
       },
   modules?: Record<string, () => Promise<any>>,
 ): TestConvex<SchemaDefinition<Schema, boolean>> {
-  let schema: SchemaDefinition<Schema, boolean> | undefined = undefined;
+  let schema: SchemaDefinition<Schema, boolean> | undefined;
   let limitsConfig: Partial<TransactionMetrics> | boolean = false;
 
-  // Detect legacy API by checking for schema's "tables" property
   function isSchemaDefinition(
     schemaOrOptions: unknown,
   ): schemaOrOptions is SchemaDefinition<Schema, boolean> {
@@ -3051,12 +2372,9 @@ export function convexTest<Schema extends GenericSchema>(
   }
 
   if (schemaOrOptions === undefined) {
-    // convexTest() - no arguments
   } else if (isSchemaDefinition(schemaOrOptions)) {
-    // convexTest(schema, modules?)
     schema = schemaOrOptions;
   } else {
-    // convexTest({ schema?, modules?, transactionLimits? })
     const opts = schemaOrOptions;
     schema = opts.schema;
     modules = opts.modules;
@@ -3087,15 +2405,13 @@ function createConvexTest<SchemaDef extends SchemaDefinition<any, boolean>>(
   };
   ensureGlobalProxy();
 
-  // Wrap all function properties to run within this test's ALS context.
   function wrapInContext<T extends Record<string, unknown>>(obj: T): T {
     const result = {} as any;
     for (const key of Object.keys(obj)) {
       const val = (obj as any)[key];
       result[key] =
         typeof val === "function"
-          ? (...args: any[]) =>
-              convexGlobalStorage.run(convexGlobal, () => val(...args))
+          ? (...args: any[]) => convexGlobalStorage.run(convexGlobal, () => val(...args))
           : val;
     }
     return result;
@@ -3113,27 +2429,20 @@ function createConvexTest<SchemaDef extends SchemaDefinition<any, boolean>>(
     convexGlobal.components[componentPath] = componentInfo;
   }
 
-  // Each accessor is immutable: `withIdentity` and `withRequestMetadata`
-  // return a new one, keeping what the other method configured, so they can be
-  // called in either order.
   function testAccessor(auth: AuthFake, requestOptions: RequestOptions): any {
     return {
       ...wrapInContext(withAuth(auth, requestOptions)),
       withIdentity(identity: Partial<UserIdentity>) {
-        const subject =
-          identity.subject ?? "" + simpleHash(JSON.stringify(identity));
+        const subject = identity.subject ?? "" + simpleHash(JSON.stringify(identity));
         const issuer = identity.issuer ?? "https://convex.test";
-        const tokenIdentifier =
-          identity.tokenIdentifier ?? `${issuer}|${subject}`;
+        const tokenIdentifier = identity.tokenIdentifier ?? `${issuer}|${subject}`;
         const fullIdentity = { ...identity, subject, issuer, tokenIdentifier };
         return testAccessor(
           new AuthFake(fullIdentity, createTestJwt(fullIdentity)),
           requestOptions,
         );
       },
-      withRequestMetadata(
-        metadata: Partial<Pick<RequestMetadata, "ip" | "userAgent">>,
-      ) {
+      withRequestMetadata(metadata: Partial<Pick<RequestMetadata, "ip" | "userAgent">>) {
         return testAccessor(auth, {
           ip: metadata.ip ?? null,
           userAgent: metadata.userAgent ?? null,
@@ -3148,7 +2457,6 @@ function createConvexTest<SchemaDef extends SchemaDefinition<any, boolean>>(
   };
 }
 
-// Capture before fake timers are installed.
 const realSetTimeout = globalThis.setTimeout.bind(globalThis);
 const realClearTimeout = globalThis.clearTimeout.bind(globalThis);
 
@@ -3160,16 +2468,12 @@ function withAuth(
   auth: AuthFake = authStorage.getStore() ?? new AuthFake(),
   requestOptions: RequestOptions = DEFAULT_REQUEST_OPTIONS,
 ) {
-  // Auth doesn't propagate across component boundaries.
   function authForComponent(componentPath: string) {
     const ctx = executionContextStorage.getStore();
-    const isCrossComponent =
-      ctx !== undefined && componentPath !== ctx.componentPath;
+    const isCrossComponent = ctx !== undefined && componentPath !== ctx.componentPath;
     return isCrossComponent ? new AuthFake() : auth;
   }
 
-  // Nested calls, including calls into components, run as part of the request
-  // that triggered the outermost function, so they share its metadata.
   function requestMetadataForExecution(): RequestMetadataFake {
     return (
       requestMetadataStorage.getStore() ?? {
@@ -3197,9 +2501,7 @@ function withAuth(
           auth: authStorage.getStore() ?? auth,
           ...extraCtx,
         };
-        return runWithGlobalOverrides(transactionGlobalOverrides(), () =>
-          handler(testCtx, a),
-        );
+        return runWithGlobalOverrides(transactionGlobalOverrides(), () => handler(testCtx, a));
       },
     });
     const transactionManager = getTransactionManager();
@@ -3236,18 +2538,13 @@ function withAuth(
 
       const commitTs = transactionManager.commit(isNested);
       const result = jsonToConvex(JSON.parse(rawResult));
-      return commitTs === null
-        ? (result as T)
-        : (resolveCommittedValues(result, commitTs) as T);
+      return commitTs === null ? (result as T) : (resolveCommittedValues(result, commitTs) as T);
     } catch (e) {
       transactionManager.rollback(isNested);
       throw deserializeConvexErrorData(e);
     }
   };
 
-  // Shared helper to run a query with a given handler and transaction context.
-  // Used by both queryFromPath (for function references) and inline queries.
-  // Callers are responsible for acquiring the nested lock when nested.
   const runQueryWithHandler = async <T>(
     handler: (ctx: any, args: any) => T,
     args: any,
@@ -3258,9 +2555,7 @@ function withAuth(
     const q = queryGeneric({
       handler: (ctx: any, a: any) => {
         const testCtx = { ...ctx, auth: authStorage.getStore() ?? auth };
-        return runWithGlobalOverrides(transactionGlobalOverrides(), () =>
-          handler(testCtx, a),
-        );
+        return runWithGlobalOverrides(transactionGlobalOverrides(), () => handler(testCtx, a));
       },
     });
     const transactionManager = getTransactionManager();
@@ -3281,9 +2576,9 @@ function withAuth(
     try {
       const childLock = new NestedLock();
       const invokeRaw = () =>
-        (
-          q as unknown as { invokeQuery: (args: string) => Promise<string> }
-        ).invokeQuery(JSON.stringify(convexToJson([parseArgs(args)])));
+        (q as unknown as { invokeQuery: (args: string) => Promise<string> }).invokeQuery(
+          JSON.stringify(convexToJson([parseArgs(args)])),
+        );
       const invokeInContext = () =>
         executionContextStorage.run(childCtx, () =>
           requestMetadataStorage.run(requestMetadata, () =>
@@ -3297,7 +2592,7 @@ function withAuth(
       if (!isNested && hasPendingValues(result)) {
         throw new Error(
           `Function ${functionPath.udfPath} return value invalid: queries ` +
-            `cannot return an unresolved placeholder value.`,
+            "cannot return an unresolved placeholder value.",
         );
       }
       return result as T;
@@ -3308,8 +2603,6 @@ function withAuth(
     }
   };
 
-  // Shared helper to run an action with a given handler
-  // Used by both actionFromPath (for function references) and inline actions
   const runActionWithHandler = async <T>(
     handler: (ctx: any, args: any) => T,
     args: any,
@@ -3342,22 +2635,17 @@ function withAuth(
     const requestMetadata = requestMetadataForExecution();
     return await executionContextStorage.run(childCtx, async () => {
       try {
-        const rawResult = await requestMetadataStorage.run(
-          requestMetadata,
-          () =>
-            authStorage.run(authForChild, () =>
-              (
-                a as unknown as {
-                  invokeAction: (
-                    requestId: string,
-                    args: string,
-                  ) => Promise<string>;
-                }
-              ).invokeAction(
-                requestMetadata.requestId,
-                JSON.stringify(convexToJson([parseArgs(args)])),
-              ),
+        const rawResult = await requestMetadataStorage.run(requestMetadata, () =>
+          authStorage.run(authForChild, () =>
+            (
+              a as unknown as {
+                invokeAction: (requestId: string, args: string) => Promise<string>;
+              }
+            ).invokeAction(
+              requestMetadata.requestId,
+              JSON.stringify(convexToJson([parseArgs(args)])),
             ),
+          ),
         );
         return jsonToConvex(JSON.parse(rawResult)) as T;
       } catch (e) {
@@ -3379,12 +2667,7 @@ function withAuth(
       }
       try {
         const resolved = await resolveFunction(functionPath, "query");
-        validateFunctionArgs(
-          resolved.args,
-          args ?? {},
-          resolved.functionPath,
-          isNested,
-        );
+        validateFunctionArgs(resolved.args, args ?? {}, resolved.functionPath, isNested);
 
         const result = await runQueryWithHandler(
           resolved.handler,
@@ -3393,12 +2676,7 @@ function withAuth(
           isNested,
           transactionLimits,
         );
-        validateReturnValue(
-          resolved.returns,
-          result,
-          "query",
-          resolved.functionPath,
-        );
+        validateReturnValue(resolved.returns, result, "query", resolved.functionPath);
         return result;
       } finally {
         if (parentLock) {
@@ -3416,34 +2694,20 @@ function withAuth(
       if (parentLock) {
         await parentLock.acquire();
       }
-      // Stash pending writes so the query only sees committed state.
       const transactionManager = getTransactionManager();
       const stashed = transactionManager.stashWrites();
       try {
         const resolved = await resolveFunction(functionPath, "query");
-        validateFunctionArgs(
-          resolved.args,
-          args ?? {},
-          resolved.functionPath,
-          // Only reachable from inside a mutation.
-          /* allowPendingValues */ true,
-        );
+        validateFunctionArgs(resolved.args, args ?? {}, resolved.functionPath, true);
 
         const result = await runQueryWithHandler(
           resolved.handler,
           args,
           resolved.functionPath,
-          // isNested=true to avoid re-acquiring the top-level lock
-          // (we're inside a mutation that already holds it).
-          /* isNested */ true,
+          true,
           transactionLimits,
         );
-        validateReturnValue(
-          resolved.returns,
-          result,
-          "query",
-          resolved.functionPath,
-        );
+        validateReturnValue(resolved.returns, result, "query", resolved.functionPath);
         return result;
       } finally {
         transactionManager.restoreWrites(stashed);
@@ -3465,12 +2729,7 @@ function withAuth(
       }
       try {
         const resolved = await resolveFunction(functionPath, "mutation");
-        validateFunctionArgs(
-          resolved.args,
-          args ?? {},
-          resolved.functionPath,
-          isNested,
-        );
+        validateFunctionArgs(resolved.args, args ?? {}, resolved.functionPath, isNested);
 
         const result = await runMutationWithHandler(
           resolved.handler,
@@ -3480,12 +2739,7 @@ function withAuth(
           isNested,
           transactionLimits,
         );
-        validateReturnValue(
-          resolved.returns,
-          result,
-          "mutation",
-          resolved.functionPath,
-        );
+        validateReturnValue(resolved.returns, result, "mutation", resolved.functionPath);
         return result;
       } finally {
         if (parentLock) {
@@ -3496,13 +2750,7 @@ function withAuth(
 
     actionFromPath: async (functionPath: FunctionPath, args: any) => {
       const resolved = await resolveFunction(functionPath, "action");
-      // An action runs outside any transaction.
-      validateFunctionArgs(
-        resolved.args,
-        args ?? {},
-        resolved.functionPath,
-        /* allowPendingValues */ false,
-      );
+      validateFunctionArgs(resolved.args, args ?? {}, resolved.functionPath, false);
 
       const result = await runActionWithHandler(
         resolved.handler,
@@ -3512,32 +2760,18 @@ function withAuth(
         byTypeWithPath.runMutation,
         byTypeWithPath.runAction,
       );
-      validateReturnValue(
-        resolved.returns,
-        result,
-        "action",
-        resolved.functionPath,
-      );
+      validateReturnValue(resolved.returns, result, "action", resolved.functionPath);
       return result;
     },
-    runQuery: async (
-      functionReference: FunctionReference<any, any, any, any>,
-      args: any,
-    ) => {
+    runQuery: async (functionReference: FunctionReference<any, any, any, any>, args: any) => {
       const functionPath = getFunctionPathFromReference(functionReference);
       return await byTypeWithPath.queryFromPath(functionPath, args);
     },
-    runMutation: async (
-      functionReference: FunctionReference<any, any, any, any>,
-      args: any,
-    ) => {
+    runMutation: async (functionReference: FunctionReference<any, any, any, any>, args: any) => {
       const functionPath = getFunctionPathFromReference(functionReference);
       return await byTypeWithPath.mutationFromPath(functionPath, args);
     },
-    runAction: async (
-      functionReference: FunctionReference<any, any, any, any>,
-      args: any,
-    ) => {
+    runAction: async (functionReference: FunctionReference<any, any, any, any>, args: any) => {
       const functionPath = getFunctionPathFromReference(functionReference);
       return await byTypeWithPath.actionFromPath(functionPath, args);
     },
@@ -3550,31 +2784,24 @@ function withAuth(
           functionReferenceOrHandler,
           args ?? {},
           { componentPath: getCurrentComponentPath(), udfPath: "inline" },
-          /* isNested */ false,
+          false,
         );
       }
-      const functionPath = getFunctionPathFromReference(
-        functionReferenceOrHandler,
-      );
+      const functionPath = getFunctionPathFromReference(functionReferenceOrHandler);
       return await byTypeWithPath.queryFromPath(functionPath, args);
     },
 
-    mutation: async (
-      functionReferenceOrHandler: any,
-      args?: any,
-    ): Promise<Value> => {
+    mutation: async (functionReferenceOrHandler: any, args?: any): Promise<Value> => {
       if (typeof functionReferenceOrHandler === "function") {
         return await runMutationWithHandler(
           functionReferenceOrHandler,
           args ?? {},
-          /* extraCtx */ {},
+          {},
           { componentPath: getCurrentComponentPath(), udfPath: "inline" },
-          /* isNested */ false,
+          false,
         );
       }
-      const functionPath = getFunctionPathFromReference(
-        functionReferenceOrHandler,
-      );
+      const functionPath = getFunctionPathFromReference(functionReferenceOrHandler);
       return await byTypeWithPath.mutationFromPath(functionPath, args);
     },
 
@@ -3589,17 +2816,11 @@ function withAuth(
           byTypeWithPath.runAction,
         );
       }
-      const functionPath = getFunctionPathFromReference(
-        functionReferenceOrHandler,
-      );
+      const functionPath = getFunctionPathFromReference(functionReferenceOrHandler);
       return await byTypeWithPath.actionFromPath(functionPath, args);
     },
   };
-  const run = async <T>(
-    componentPath: string,
-    handler: (ctx: any) => T,
-  ): Promise<T> => {
-    // Grab StorageActionWriter from action ctx
+  const run = async <T>(componentPath: string, handler: (ctx: any) => T): Promise<T> => {
     const a = actionGeneric({
       handler: async (ctx: GenericActionCtx<any>) => {
         return await runMutationWithHandler(
@@ -3607,11 +2828,7 @@ function withAuth(
           {},
           {
             storage: ctx.storage,
-            // ActionCtx support was added in 0.0.40, removed in 0.0.41, should be added back in the future.
-            // runAction: ctx.runAction.bind(ctx),
-            // vectorSearch: ctx.vectorSearch.bind(ctx),
           },
-          // Fake mutation path.
           {
             componentPath,
             udfPath: "custom",
@@ -3627,10 +2844,7 @@ function withAuth(
           a as unknown as {
             invokeAction: (requestId: string, args: string) => Promise<string>;
           }
-        ).invokeAction(
-          requestMetadata.requestId,
-          JSON.stringify(convexToJson([{}])),
-        ),
+        ).invokeAction(requestMetadata.requestId, JSON.stringify(convexToJson([{}]))),
       );
       return jsonToConvex(JSON.parse(rawResult)) as T;
     } catch (e) {
@@ -3662,7 +2876,7 @@ function withAuth(
     fetch: async (path: string, init?: RequestInit) => {
       const router: HttpRouter = (await getModules()("http"))["default"];
       if (!path.startsWith("/")) {
-        throw new Error(`Path given to \`t.fetch\` must start with a \`/\``);
+        throw new Error("Path given to `t.fetch` must start with a `/`");
       }
       const url = new URL(`https://some.convex.site${path}`);
       const found = router.lookup(url.pathname, init?.method ?? ("GET" as any));
@@ -3689,8 +2903,6 @@ function withAuth(
         depth: 0,
         paginatedQueries: 0,
       };
-      // The request's headers are not inspected: like the identity, the IP and
-      // the user agent are configured on the test accessor.
       const requestMetadata = requestMetadataForExecution();
       const response = await executionContextStorage.run(httpCtx, () =>
         requestMetadataStorage.run(requestMetadata, () =>
@@ -3709,19 +2921,12 @@ function withAuth(
 
     finishAllScheduledFunctions: async (
       advanceTimers: () => void,
-      maxIterations: number = 100,
+      maxIterations = 100,
     ): Promise<void> => {
-      // Wait for all scheduled functions to finish, advancing time in between
-      // each function.
-      // Stop after a fixed number of iterations to avoid infinite loops.
       const { scheduler } = getConvexGlobal();
-      const originalSetTimeout = globalOverridesStorage.exit(
-        () => globalThis.setTimeout,
-      );
+      const originalSetTimeout = globalOverridesStorage.exit(() => globalThis.setTimeout);
       const advanceTimersIfActive = () => {
-        const currentSetTimeout = globalOverridesStorage.exit(
-          () => globalThis.setTimeout,
-        );
+        const currentSetTimeout = globalOverridesStorage.exit(() => globalThis.setTimeout);
         if (currentSetTimeout !== originalSetTimeout) {
           throw new Error(
             "finishAllScheduledFunctions: timers were restored or replaced " +
@@ -3730,14 +2935,6 @@ function withAuth(
         }
         advanceTimers();
       };
-      // A function scheduled while real timers were active sits on a real
-      // setTimeout that advanceTimers (fake timers) cannot fire. If it has
-      // already expired it fires within a few real event loop turns, so
-      // yield and re-check before concluding there is nothing left to run.
-      // If it still hasn't fired after this many consecutive idle turns,
-      // its scheduled time hasn't arrived on the real clock and it can
-      // never run during this test, so it is skipped, matching the
-      // behavior before the in-memory scheduler existed.
       const maxIdleTurns = 20;
       let idleTurns = 0;
       for (let i = 0; i < maxIterations; i++) {
@@ -3751,8 +2948,6 @@ function withAuth(
           continue;
         }
         idleTurns = 0;
-        // Advance timers while waiting for scheduled functions to finish.
-        // Stop if teardown restores or replaces the clock.
         let timer: ReturnType<typeof setTimeout> | undefined;
         try {
           await new Promise<void>((resolve, reject) => {
@@ -3761,14 +2956,10 @@ function withAuth(
                 advanceTimersIfActive();
                 timer = realSetTimeout(pump, 0);
               } catch (error) {
-                // Preserve the value thrown by advanceTimers.
-                // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
                 reject(error);
               }
             };
-            void scheduler
-              .finishInProgressScheduledFunctions()
-              .then(resolve, reject);
+            void scheduler.finishInProgressScheduledFunctions().then(resolve, reject);
             pump();
           });
         } finally {
@@ -3784,17 +2975,13 @@ function withAuth(
   };
 }
 
-function parseArgs(
-  args: Record<string, Value> | undefined,
-): Record<string, Value> {
+function parseArgs(args: Record<string, Value> | undefined): Record<string, Value> {
   if (args === undefined) {
     return {};
   }
   if (!isSimpleObject(args)) {
     throw new Error(
-      `The arguments to a Convex function must be an object. Received: ${
-        args as any
-      }`,
+      `The arguments to a Convex function must be an object. Received: ${args as any}`,
     );
   }
   return args;
@@ -3809,8 +2996,8 @@ function validateFunctionArgs(
   if (!allowPendingValues && hasPendingValues(args)) {
     throw new Error(
       `Invalid arguments for "${functionPath.udfPath}": an unresolved ` +
-        `placeholder value can only be passed to a query or mutation ` +
-        `called from a mutation`,
+        "placeholder value can only be passed to a query or mutation " +
+        "called from a mutation",
     );
   }
   validateValidator(argsValidator, resolvePendingValues(args));
@@ -3858,18 +3045,12 @@ function getFunctionPathFromAddress(
     };
   }
   if (functionAddress.reference !== undefined) {
-    // "_reference/childComponent/aggregate/path/to/file/functionName" -> "aggregate/path/to/file"
     const childComponentName = functionAddress.reference.split("/")[2];
     let componentPath = childComponentName;
     if (getCurrentComponentPath().length > 0) {
       componentPath = `${getCurrentComponentPath()}/${componentPath}`;
     }
-    // "_reference/childComponent/aggregate/path/to/file/functionName" -> "path/to/file/functionName"
-    const functionNameWithSlashes = functionAddress.reference
-      .split("/")
-      .slice(3)
-      .join("/");
-    // "path/to/file/functionName" -> "path/to/file:functionName"
+    const functionNameWithSlashes = functionAddress.reference.split("/").slice(3).join("/");
     const filepath = functionNameWithSlashes.split("/").slice(0, -1).join("/");
     const functionName = functionNameWithSlashes.split("/").pop();
     return {
@@ -3880,9 +3061,7 @@ function getFunctionPathFromAddress(
   throw new Error("Function address not supported");
 }
 
-function getFunctionPathFromReference(
-  functionReference: FunctionReference<any, any, any, any>,
-) {
+function getFunctionPathFromReference(functionReference: FunctionReference<any, any, any, any>) {
   return getFunctionPathFromAddress(getFunctionAddress(functionReference));
 }
 
@@ -3921,14 +3100,10 @@ async function resolveFunction<T extends RegisteredFunctionKind>(
   returns: ValidatorJSON | null;
   args: ValidatorJSON;
 }> {
-  // "queries/messages:list" -> ["queries/messages", "list"]
   const [modulePath, maybeExportName] = functionPath.udfPath.split(":");
-  const exportName =
-    maybeExportName === undefined ? "default" : maybeExportName;
+  const exportName = maybeExportName === undefined ? "default" : maybeExportName;
 
-  const module = await getModulesForComponent(functionPath.componentPath)(
-    modulePath,
-  );
+  const module = await getModulesForComponent(functionPath.componentPath)(modulePath);
 
   const func = module[exportName];
   if (func === undefined) {
@@ -3967,16 +3142,13 @@ async function resolveFunction<T extends RegisteredFunctionKind>(
     case "any":
       break;
     default:
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw type satisfies never;
   }
   const args = JSON.parse(func.exportArgs()) as ValidatorJSON;
-  // The real backend rejects these functions at push time, so surface the same
-  // error as soon as the function is resolved.
   if (args.type !== "object" && args.type !== "any") {
     throw new Error(
       `Invalid JSON returned from ${modulePath}.js:${exportName}.exportArgs(): ` +
-        `Args validator must be an object or any`,
+        "Args validator must be an object or any",
     );
   }
   const returns = JSON.parse(func.exportReturns());
@@ -3989,7 +3161,7 @@ function simpleHash(string: string) {
   for (let i = 0; i < string.length; i++) {
     const char = string.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return hash;
 }

@@ -2,14 +2,12 @@ import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import {
   action,
-  ActionCtx,
+  type ActionCtx,
   internalAction,
   internalQuery,
   mutation,
 } from "./_generated/server";
-import { Doc } from "./_generated/dataModel";
-
-/// helpers
+import type { Doc } from "./_generated/dataModel";
 
 export const list = internalQuery({
   args: {},
@@ -26,20 +24,13 @@ export const add = mutation({
   },
 });
 
-/// action calling query (1.0/actions/query)
-
 export const actionCallingQuery = internalAction({
   args: {},
   handler: async (ctx) => {
-    const result: Doc<"messages">[] = await ctx.runQuery(
-      internal.actions.list,
-      {},
-    );
+    const result: Doc<"messages">[] = await ctx.runQuery(internal.actions.list, {});
     return result;
   },
 });
-
-/// action calling mutation (1.0/actions/mutation)
 
 export const actionCallingMutation = action({
   args: { body: v.string() },
@@ -48,27 +39,19 @@ export const actionCallingMutation = action({
   },
 });
 
-/// action calling action (1.0/actions/action)
-
 export const actionCallingAction = internalAction({
   args: { count: v.number() },
   handler: actionCallingActionHandler,
 });
-export async function actionCallingActionHandler(
-  ctx: ActionCtx,
-  { count }: { count: number },
-) {
+export async function actionCallingActionHandler(ctx: ActionCtx, { count }: { count: number }) {
   if (count > 0) {
-    const result: { called: number } = await ctx.runAction(
-      internal.actions.actionCallingAction,
-      { count: count - 1 },
-    );
+    const result: { called: number } = await ctx.runAction(internal.actions.actionCallingAction, {
+      count: count - 1,
+    });
     return { called: result.called + 1 };
   }
   return { called: 0 };
 }
-
-/// actions calling mutations concurrently
 
 export const actionCallingMutationsConcurrently = action({
   args: { authors: v.array(v.string()), body: v.string() },

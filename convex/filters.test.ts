@@ -29,9 +29,7 @@ test("and operator", async () => {
     await ctx.db.insert("messages", { body: "hello", author: "Bob" });
     return await ctx.db
       .query("messages")
-      .filter((q) =>
-        q.and(q.eq(q.field("body"), "hi"), q.eq(q.field("author"), "Alice")),
-      )
+      .filter((q) => q.and(q.eq(q.field("body"), "hi"), q.eq(q.field("author"), "Alice")))
       .collect();
   });
   expect(result).toMatchObject([{ body: "hi", author: "Alice" }]);
@@ -44,9 +42,7 @@ test("or operator", async () => {
     await ctx.db.insert("messages", { body: "hello", author: "Bob" });
     return await ctx.db
       .query("messages")
-      .filter((q) =>
-        q.or(q.eq(q.field("body"), "hi"), q.eq(q.field("body"), "hello")),
-      )
+      .filter((q) => q.or(q.eq(q.field("body"), "hi"), q.eq(q.field("body"), "hello")))
       .collect();
   });
   expect(result).toMatchObject([
@@ -115,7 +111,6 @@ test("nested field", async () => {
     expect(things).toMatchObject([{ field: { nested: "some" } }]);
     const thingsByIndex = await ctx.db
       .query("things")
-      // `as any` because of a bug in Convex index types
       .withIndex("fieldNested", (q) => q.eq("field.nested", "some" as any))
       .collect();
     expect(thingsByIndex).toMatchObject([{ field: { nested: "some" } }]);

@@ -2,16 +2,12 @@ import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
-/// helpers
-
 export const list = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db.query("messages").collect();
   },
 });
-
-/// insert
 
 export const insert = mutation({
   args: { body: v.string(), author: v.string() },
@@ -21,16 +17,12 @@ export const insert = mutation({
   },
 });
 
-/// patch
-
 export const patch = mutation({
   args: { id: v.id("messages"), body: v.string() },
   handler: async (ctx, { id, body }) => {
     await ctx.db.patch(id, { body });
   },
 });
-
-/// replace
 
 export const replace = mutation({
   args: { id: v.id("messages"), author: v.string(), body: v.string() },
@@ -39,16 +31,12 @@ export const replace = mutation({
   },
 });
 
-/// delete
-
 export const deleteDoc = mutation({
   args: { id: v.id("messages") },
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id);
   },
 });
-
-/// transaction
 
 export const throws = mutation({
   args: { body: v.string(), author: v.string() },
@@ -76,9 +64,7 @@ export const rolledBackSubtransaction = mutation({
         body: "hello",
         author: "lee",
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
     await ctx.db.insert("messages", { body: "world", author: "sarah" });
     const docs = await ctx.db.query("messages").collect();
     return docs.length;
@@ -149,15 +135,9 @@ export const countMessages = internalQuery({
 
 export const snapshotQueryDoesNotSeePendingWrites = mutation({
   args: {},
-  handler: async (
-    ctx,
-  ): Promise<{ withWrites: number; withoutWrites: number }> => {
+  handler: async (ctx): Promise<{ withWrites: number; withoutWrites: number }> => {
     await ctx.db.insert("messages", { body: "hello", author: "sarah" });
-    // Regular query sees the pending write
-    const withWrites: number = await ctx.runQuery(
-      internal.mutations.countMessages,
-    );
-    // Snapshot query does NOT see the pending write
+    const withWrites: number = await ctx.runQuery(internal.mutations.countMessages);
     const withoutWrites: number = await ctx.runQuery(
       internal.mutations.countMessages,
       {},

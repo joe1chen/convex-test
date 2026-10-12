@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { convexTest } from "../index";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import { Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 
 test("insert", async () => {
   const t = convexTest(schema);
@@ -61,12 +61,10 @@ test("patch with _id", async () => {
     author: "sarah",
   });
 
-  // should not crash even with `_id` included
   await t.run(async (ctx) => {
     await ctx.db.patch(id, { _id: id });
   });
 
-  // throws if `_id` doesn't match
   await expect(async () => {
     await t.run(async (ctx) => {
       await ctx.db.patch(id, { _id: "nonsense" as Id<"messages"> });
@@ -99,7 +97,6 @@ test("patch undefined", async () => {
     return ctx.db.query("messages").collect();
   });
   expect(messages).toHaveLength(1);
-  // NOTE can't use toMatchObject because missing field is significant.
   const { body, author, embedding } = messages[0];
   expect(body).toStrictEqual("hi");
   expect(author).toStrictEqual("sarah");
@@ -131,8 +128,6 @@ test("concurrent append", async () => {
   }
   await Promise.all(concurrentCalls);
   const messages = await t.query(api.mutations.list);
-  // Regression test: if the mutations are not serializable, the final
-  // message becomes "hello!!".
   expect(messages).toMatchObject([{ body: "hello!!!!!!!!!!", author: "lee" }]);
 });
 
@@ -145,7 +140,6 @@ test("delete is visible in transaction", async () => {
     await ctx.db.delete(id);
     expect(await ctx.db.get(id)).toBeNull();
     const first = await ctx.db.query("messages").first();
-    // Regression test: this used to still exist even after delete.
     expect(first).toBeNull();
   });
 });
@@ -165,44 +159,27 @@ test("subtransaction commit then rollback parent", async () => {
   expect(docs.length).toStrictEqual(0);
 });
 
-// Regression test, making sure we merge writes in the correct order.
 test("insert then patch in subtransaction", async () => {
   const t = convexTest(schema);
-  const result = await t.mutation(
-    api.mutations.insertThenPatchInSubtransaction,
-    {},
-  );
+  const result = await t.mutation(api.mutations.insertThenPatchInSubtransaction, {});
   expect(result).toEqual(["hi"]);
 });
 
 test("insert then delete in subtransaction", async () => {
   const t = convexTest(schema);
-  const result = await t.mutation(
-    api.mutations.insertThenDeleteInSubtransaction,
-    {},
-  );
+  const result = await t.mutation(api.mutations.insertThenDeleteInSubtransaction, {});
   expect(result).toEqual([]);
 });
 
 test("snapshot query does not see pending writes", async () => {
   const t = convexTest(schema);
-  const result = await t.mutation(
-    api.mutations.snapshotQueryDoesNotSeePendingWrites,
-    {},
-  );
-  // Regular query sees the insert (1 message), snapshot query does not (0 messages)
+  const result = await t.mutation(api.mutations.snapshotQueryDoesNotSeePendingWrites, {});
   expect(result).toEqual({ withWrites: 1, withoutWrites: 0 });
 });
 
 test("snapshot query sees previously committed writes", async () => {
   const t = convexTest(schema);
-  // First, commit a message
   await t.mutation(api.mutations.insert, { body: "committed", author: "lee" });
-  // Now run a mutation that inserts another and uses snapshot query
-  const result = await t.mutation(
-    api.mutations.snapshotQueryDoesNotSeePendingWrites,
-    {},
-  );
-  // Regular query sees both committed + pending (2), snapshot sees only committed (1)
+  const result = await t.mutation(api.mutations.snapshotQueryDoesNotSeePendingWrites, {});
   expect(result).toEqual({ withWrites: 2, withoutWrites: 1 });
 });

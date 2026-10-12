@@ -16,21 +16,14 @@ export const metadataAction = action({
   },
 });
 
-// `getRequestMetadata` is not part of a query's `ctx.meta`, so the syscall
-// has to be called directly to check that queries are rejected.
 export const metadataQuery = query({
   args: {},
   handler: async () => {
     const syscalls = (globalThis as any).Convex;
-    return JSON.parse(
-      await syscalls.asyncSyscall("1.0/getRequestMetadata", JSON.stringify({})),
-    );
+    return JSON.parse(await syscalls.asyncSyscall("1.0/getRequestMetadata", JSON.stringify({})));
   },
 });
 
-// Records the metadata of the function execution it runs in, so that
-// executions that don't return to the test (like scheduled functions) can be
-// inspected afterwards.
 export const record = mutation({
   args: { label: v.string() },
   returns: v.null(),
@@ -54,10 +47,7 @@ export const mutationCallingMutation = mutation({
   args: {},
   handler: async (ctx) => {
     await ctx.runMutation(api.requestMetadata.record, { label: "nested" });
-    const component = await ctx.runMutation(
-      components.counter.public.requestMetadata,
-      {},
-    );
+    const component = await ctx.runMutation(components.counter.public.requestMetadata, {});
     return { own: await ctx.meta.getRequestMetadata(), component };
   },
 });
@@ -71,10 +61,7 @@ export const actionCallingFunctions = action({
     await ctx.runAction(api.requestMetadata.actionRecordingMetadata, {
       label: "actionFromAction",
     });
-    const component = await ctx.runAction(
-      components.counter.public.requestMetadataAction,
-      {},
-    );
+    const component = await ctx.runAction(components.counter.public.requestMetadataAction, {});
     return { own: await ctx.meta.getRequestMetadata(), component };
   },
 });

@@ -12,8 +12,7 @@ const counterModules = import.meta.glob("./counter/component/**/*.ts");
 test("query arguments validation", async () => {
   const t = convexTest(schema);
   await expect(
-    async () =>
-      await t.query(api.argumentsValidation.queryWithArgs, { a: "bad" as any }),
+    async () => await t.query(api.argumentsValidation.queryWithArgs, { a: "bad" as any }),
   ).rejects.toThrowError("Validator error");
   await t.query(api.argumentsValidation.queryWithoutArgs, { a: "ok" } as any);
 });
@@ -35,18 +34,14 @@ test("mutation arguments validation", async () => {
 test("action arguments validation", async () => {
   const t = convexTest(schema);
   await expect(
-    async () =>
-      await t.action(api.argumentsValidation.actionWithArgs, {} as any),
+    async () => await t.action(api.argumentsValidation.actionWithArgs, {} as any),
   ).rejects.toThrowError("Validator error");
   await t.action(api.argumentsValidation.actionWithoutArgs, { a: "ok" } as any);
 });
 
 test("optional fields", async () => {
   const t = convexTest(schema);
-  const result = await t.query(
-    api.argumentsValidation.queryWithOptionalArgs,
-    {},
-  );
+  const result = await t.query(api.argumentsValidation.queryWithOptionalArgs, {});
   expect(result).toEqual("ok");
 });
 
@@ -75,9 +70,6 @@ test("component mutation arguments validation", async () => {
   ).toEqual(Number.POSITIVE_INFINITY);
 });
 
-// The real backend only accepts an object or `v.any()` as the args validator,
-// and rejects anything else at push time. These functions can't live in
-// `convex/` because they'd break `npx convex dev`, so they're defined inline.
 function testWithBadArgsValidators() {
   return convexTest({
     schema,
@@ -86,26 +78,17 @@ function testWithBadArgsValidators() {
       "./badArgs.ts": () =>
         Promise.resolve({
           unionQuery: query({
-            args: v.union(
-              v.object({ a: v.number() }),
-              v.object({ b: v.number() }),
-            ),
+            args: v.union(v.object({ a: v.number() }), v.object({ b: v.number() })),
             /* v8 ignore next */
             handler: () => "ok",
           }),
           unionMutation: mutation({
-            args: v.union(
-              v.object({ a: v.number() }),
-              v.object({ b: v.number() }),
-            ),
+            args: v.union(v.object({ a: v.number() }), v.object({ b: v.number() })),
             /* v8 ignore next */
             handler: () => "ok",
           }),
           unionAction: action({
-            args: v.union(
-              v.object({ a: v.number() }),
-              v.object({ b: v.number() }),
-            ),
+            args: v.union(v.object({ a: v.number() }), v.object({ b: v.number() })),
             /* v8 ignore next */
             handler: () => "ok",
           }),
@@ -124,18 +107,16 @@ test("args validator must be an object or any", async () => {
   const message =
     "Invalid JSON returned from badArgs.js:unionQuery.exportArgs(): " +
     "Args validator must be an object or any";
-  await expect(
-    t.query(anyApi.badArgs.unionQuery, { a: 1 }),
-  ).rejects.toThrowError(message);
-  await expect(
-    t.mutation(anyApi.badArgs.unionMutation, { a: 1 }),
-  ).rejects.toThrowError(/Args validator must be an object or any/);
-  await expect(
-    t.action(anyApi.badArgs.unionAction, { a: 1 }),
-  ).rejects.toThrowError(/Args validator must be an object or any/);
-  await expect(
-    t.query(anyApi.badArgs.recordQuery, { a: 1 }),
-  ).rejects.toThrowError(/Args validator must be an object or any/);
+  await expect(t.query(anyApi.badArgs.unionQuery, { a: 1 })).rejects.toThrowError(message);
+  await expect(t.mutation(anyApi.badArgs.unionMutation, { a: 1 })).rejects.toThrowError(
+    /Args validator must be an object or any/,
+  );
+  await expect(t.action(anyApi.badArgs.unionAction, { a: 1 })).rejects.toThrowError(
+    /Args validator must be an object or any/,
+  );
+  await expect(t.query(anyApi.badArgs.recordQuery, { a: 1 })).rejects.toThrowError(
+    /Args validator must be an object or any/,
+  );
 });
 
 test("object and any args validators are allowed", async () => {

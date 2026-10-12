@@ -3,7 +3,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { convexTest } from "../index";
 import { api, components } from "./_generated/api";
-import { QueryCtx } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { getSnapshotTs } from "./getSnapshotTs";
 import schema from "./schema";
 import counterSchema from "./counter/component/schema";
@@ -51,7 +51,6 @@ test.each(["query", "mutation"] as const)(
     const commitTs = await t.mutation(async (ctx) => ctx.db.vars.commitTs);
     vi.setSystemTime(now + 500);
     const handler = async (ctx: QueryCtx) => {
-      // Advancing time before the first syscall must not change the snapshot.
       vi.setSystemTime(now + 1000);
       const snapshotTs = getSnapshotTs();
       expect(snapshotTs).toBe(commitTs);
@@ -95,9 +94,7 @@ test.each([0, -1000])(
     let previousCommit = 0n;
     for (let i = 0; i < 3; i++) {
       vi.setSystemTime(now + i * clockDelta);
-      const { id, snapshotTs, commitTs } = await t.mutation(
-        api.getSnapshotTs.snapshotMutation,
-      );
+      const { id, snapshotTs, commitTs } = await t.mutation(api.getSnapshotTs.snapshotMutation);
       expect(typeof commitTs).toBe("bigint");
       expect(snapshotTs).toBe(previousCommit);
       expect(commitTs).toBeGreaterThan(snapshotTs);
@@ -105,7 +102,6 @@ test.each([0, -1000])(
       expect(commitTs).toBeGreaterThan(previousCommit);
       const doc = await t.query(api.commitTs.getDoc, { id });
       expect(doc!.commitTs).toBe(commitTs);
-      // Both timestamps use nanoseconds, including the resolved placeholder.
       expect(commitTs).toBeGreaterThanOrEqual(BigInt(now) * 1_000_000n);
       expect(commitTs).toBeLessThan(BigInt(now + 1) * 1_000_000n);
       previousSnapshot = await t.query(api.getSnapshotTs.snapshotQuery);
@@ -118,9 +114,7 @@ test.each([0, -1000])(
 test("queries keep the latest commit timestamp even as the clock moves", async () => {
   vi.useFakeTimers({ now });
   const t = convexTest(schema);
-  const commitTs = expectBigint(
-    await t.mutation(async (ctx) => ctx.db.vars.commitTs),
-  );
+  const commitTs = expectBigint(await t.mutation(async (ctx) => ctx.db.vars.commitTs));
   for (const clockDelta of [0, 1000, -1000]) {
     vi.setSystemTime(now + clockDelta);
     expect(await t.query(api.getSnapshotTs.snapshotQuery)).toBe(commitTs);
@@ -135,18 +129,16 @@ test.each(["query", "mutation"] as const)(
   async (type) => {
     vi.useFakeTimers({ now });
     const t = convexTest(schema);
-    const commitTs = expectBigint(
-      await t.mutation(async (ctx) => ctx.db.vars.commitTs),
-    );
+    const commitTs = expectBigint(await t.mutation(async (ctx) => ctx.db.vars.commitTs));
     vi.setSystemTime(now + 1000);
     let snapshotTs = 0n;
     const handler = async () => {
       snapshotTs = getSnapshotTs();
       throw new Error("rollback");
     };
-    await expect(
-      type === "query" ? t.query(handler) : t.mutation(handler),
-    ).rejects.toThrow("rollback");
+    await expect(type === "query" ? t.query(handler) : t.mutation(handler)).rejects.toThrow(
+      "rollback",
+    );
     expect(snapshotTs).toBe(commitTs);
     expect(await t.query(api.getSnapshotTs.snapshotQuery)).toBe(commitTs);
     await expect(t.action(async () => getSnapshotTs())).rejects.toThrow(
@@ -165,29 +157,21 @@ test("nested queries, mutations, and stale snapshot queries share the outer snap
   const result = await t.mutation(async (ctx) => {
     const snapshotTs = getSnapshotTs();
     vi.setSystemTime(now + 1000);
-    expect(await ctx.runQuery(api.getSnapshotTs.snapshotQuery)).toBe(
-      snapshotTs,
-    );
+    expect(await ctx.runQuery(api.getSnapshotTs.snapshotQuery)).toBe(snapshotTs);
     const nested = await ctx.runMutation(api.getSnapshotTs.snapshotMutation);
     expect(nested.snapshotTs).toBe(snapshotTs);
     expect(
-      await ctx.runQuery(
-        api.getSnapshotTs.snapshotQuery,
-        {},
-        { useStaleSnapshot: true },
-      ),
+      await ctx.runQuery(api.getSnapshotTs.snapshotQuery, {}, { useStaleSnapshot: true }),
     ).toBe(snapshotTs);
-    await expect(ctx.runMutation(api.commitTs.insertThenThrow)).rejects.toThrow(
-      "rollback",
-    );
+    await expect(ctx.runMutation(api.commitTs.insertThenThrow)).rejects.toThrow("rollback");
     expect(getSnapshotTs()).toBe(snapshotTs);
     return { snapshotTs, commitTs: ctx.db.vars.commitTs, nested };
   });
   expect(result.nested.commitTs).toBe(result.commitTs);
   expect(result.commitTs).toBeGreaterThan(result.snapshotTs);
-  expect(
-    (await t.query(api.commitTs.getDoc, { id: result.nested.id }))!.commitTs,
-  ).toBe(result.commitTs);
+  expect((await t.query(api.commitTs.getDoc, { id: result.nested.id }))!.commitTs).toBe(
+    result.commitTs,
+  );
 });
 
 test("nested queries share their parent query's snapshot", async () => {
@@ -196,9 +180,7 @@ test("nested queries share their parent query's snapshot", async () => {
   await t.query(async (ctx) => {
     const snapshotTs = getSnapshotTs();
     vi.setSystemTime(now + 1000);
-    expect(await ctx.runQuery(api.getSnapshotTs.snapshotQuery)).toBe(
-      snapshotTs,
-    );
+    expect(await ctx.runQuery(api.getSnapshotTs.snapshotQuery)).toBe(snapshotTs);
     expect(getSnapshotTs()).toBe(snapshotTs);
   });
 });
@@ -210,22 +192,18 @@ test("component calls share the snapshot and commit clock", async () => {
   const result = await t.mutation(async (ctx) => {
     const snapshotTs = getSnapshotTs();
     vi.setSystemTime(now + 1000);
-    expect(await ctx.runQuery(components.counter.public.snapshot)).toBe(
-      snapshotTs,
-    );
+    expect(await ctx.runQuery(components.counter.public.snapshot)).toBe(snapshotTs);
     await ctx.runMutation(components.counter.public.addWithCommitTs, {
       name: "snapshot",
     });
     expect(getSnapshotTs()).toBe(snapshotTs);
     return { snapshotTs, commitTs: ctx.db.vars.commitTs };
   });
-  expect(
-    await t.query(components.counter.public.getCommitTs, { name: "snapshot" }),
-  ).toBe(result.commitTs);
-  expect(result.commitTs).toBeGreaterThan(result.snapshotTs);
-  expect(await t.query(components.counter.public.snapshot)).toBe(
+  expect(await t.query(components.counter.public.getCommitTs, { name: "snapshot" })).toBe(
     result.commitTs,
   );
+  expect(result.commitTs).toBeGreaterThan(result.snapshotTs);
+  expect(await t.query(components.counter.public.snapshot)).toBe(result.commitTs);
 });
 
 test("a queued query takes its snapshot after the preceding mutation commits", async () => {
@@ -260,13 +238,9 @@ test("independent test instances have independent timestamp clocks", async () =>
   vi.setSystemTime(now - 1000);
   const second = convexTest(schema);
   expect(await second.query(api.getSnapshotTs.snapshotQuery)).toBe(0n);
-  const secondCommit = await second.mutation(
-    async (ctx) => ctx.db.vars.commitTs,
-  );
+  const secondCommit = await second.mutation(async (ctx) => ctx.db.vars.commitTs);
   const secondSnapshot = await second.query(api.getSnapshotTs.snapshotQuery);
   expect(secondSnapshot).toBe(secondCommit);
   expect(secondSnapshot).toBe(BigInt(now - 1000) * 1_000_000n);
-  expect(await first.query(api.getSnapshotTs.snapshotQuery)).toBe(
-    firstSnapshot,
-  );
+  expect(await first.query(api.getSnapshotTs.snapshotQuery)).toBe(firstSnapshot);
 });

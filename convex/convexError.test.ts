@@ -48,25 +48,22 @@ test("ConvexError.data is deserialized when caught from runAction in action", as
 
 test("ConvexError.data is deserialized at the test boundary", async () => {
   const t = convexTest(schema);
-  await expect(
-    t.mutation(api.convexError.throwsObject, {}),
-  ).rejects.toMatchObject({ data: { kind: "x" } });
+  await expect(t.mutation(api.convexError.throwsObject, {})).rejects.toMatchObject({
+    data: { kind: "x" },
+  });
 });
 
 test("ConvexError.data is deserialized when caught from runMutation inside a mutation", async () => {
   const t = convexTest(schema);
-  const caught = await t.mutation(
-    api.convexError.mutationCatchingConvexError,
-    {},
-  );
+  const caught = await t.mutation(api.convexError.mutationCatchingConvexError, {});
   expect(caught).toEqual({ kind: "x" });
 });
 
 test("ConvexError with primitive data round-trips", async () => {
   const t = convexTest(schema);
-  await expect(
-    t.mutation(api.convexError.throwsString, {}),
-  ).rejects.toMatchObject({ data: "just a message" });
+  await expect(t.mutation(api.convexError.throwsString, {})).rejects.toMatchObject({
+    data: "just a message",
+  });
 });
 
 test("ConvexError.data is deserialized from inline t.query handler", async () => {

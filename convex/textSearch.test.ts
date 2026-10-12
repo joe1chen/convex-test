@@ -27,9 +27,7 @@ test("text search skips missing optional search fields", async () => {
   const results = await t.run(async (ctx) =>
     ctx.db
       .query("docs")
-      .withSearchIndex("search_summary", (q) =>
-        q.search("summaryText", "budget"),
-      )
+      .withSearchIndex("search_summary", (q) => q.search("summaryText", "budget"))
       .take(10),
   );
   expect(results).toMatchObject([
@@ -40,41 +38,32 @@ test("text search skips missing optional search fields", async () => {
   const filteredResults = await t.run(async (ctx) =>
     ctx.db
       .query("docs")
-      .withSearchIndex("search_summary", (q) =>
-        q.search("summaryText", "budget").eq("org", "a"),
-      )
+      .withSearchIndex("search_summary", (q) => q.search("summaryText", "budget").eq("org", "a"))
       .take(10),
   );
-  expect(filteredResults).toMatchObject([
-    { org: "a", summaryText: "budget review" },
-  ]);
+  expect(filteredResults).toMatchObject([{ org: "a", summaryText: "budget review" }]);
 });
 
-test.each([null, 123])(
-  "text search skips non-string search value %j",
-  async (value) => {
-    const schema = defineSchema({
-      docs: defineTable({
-        summaryText: v.union(v.string(), v.null(), v.number()),
-      }).searchIndex("search_summary", { searchField: "summaryText" }),
-    });
-    const t = convexTest(schema);
-    await t.run(async (ctx) => {
-      await ctx.db.insert("docs", { summaryText: value });
-      await ctx.db.insert("docs", { summaryText: "123 null" });
-    });
+test.each([null, 123])("text search skips non-string search value %j", async (value) => {
+  const schema = defineSchema({
+    docs: defineTable({
+      summaryText: v.union(v.string(), v.null(), v.number()),
+    }).searchIndex("search_summary", { searchField: "summaryText" }),
+  });
+  const t = convexTest(schema);
+  await t.run(async (ctx) => {
+    await ctx.db.insert("docs", { summaryText: value });
+    await ctx.db.insert("docs", { summaryText: "123 null" });
+  });
 
-    const results = await t.run(async (ctx) =>
-      ctx.db
-        .query("docs")
-        .withSearchIndex("search_summary", (q) =>
-          q.search("summaryText", String(value)),
-        )
-        .take(10),
-    );
-    expect(results).toMatchObject([{ summaryText: "123 null" }]);
-  },
-);
+  const results = await t.run(async (ctx) =>
+    ctx.db
+      .query("docs")
+      .withSearchIndex("search_summary", (q) => q.search("summaryText", String(value)))
+      .take(10),
+  );
+  expect(results).toMatchObject([{ summaryText: "123 null" }]);
+});
 
 test("text search", async () => {
   const t = convexTest(schema);
@@ -171,9 +160,7 @@ test("case insensitive text search", async () => {
       body: "TEXT",
       author: "charlie",
     });
-    expect(messages).toMatchObject([
-      { author: "charlie", body: "Mixed Case Text" },
-    ]);
+    expect(messages).toMatchObject([{ author: "charlie", body: "Mixed Case Text" }]);
   }
 });
 

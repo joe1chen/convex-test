@@ -1,11 +1,5 @@
 import { v } from "convex/values";
-import {
-  internalAction,
-  internalMutation,
-  internalQuery,
-} from "./_generated/server";
-
-/// helpers
+import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 
 export const listFiles = internalQuery({
   args: {},
@@ -13,8 +7,6 @@ export const listFiles = internalQuery({
     return await ctx.db.system.query("_storage").collect();
   },
 });
-
-/// action store blob (storage/storeBlob)
 
 export const actionStoreBlob = internalAction({
   args: {
@@ -25,8 +17,6 @@ export const actionStoreBlob = internalAction({
   },
 });
 
-/// action get blob (storage/getBlob)
-
 export const actionGetBlob = internalAction({
   args: {
     id: v.id("_storage"),
@@ -35,8 +25,6 @@ export const actionGetBlob = internalAction({
     return (await ctx.storage.get(id))?.arrayBuffer();
   },
 });
-
-/// action delete blob (1.0/storageDelete)
 
 export const actionDeleteBlob = internalAction({
   args: {
@@ -47,8 +35,6 @@ export const actionDeleteBlob = internalAction({
   },
 });
 
-/// mutation delete blob (1.0/storageDelete)
-
 export const mutationDeleteBlob = internalMutation({
   args: {
     id: v.id("_storage"),
@@ -58,8 +44,6 @@ export const mutationDeleteBlob = internalMutation({
   },
 });
 
-/// query get URL (1.0/storageGetUrl)
-
 export const queryGetUrl = internalQuery({
   args: {
     id: v.id("_storage"),
@@ -68,8 +52,6 @@ export const queryGetUrl = internalQuery({
     return await ctx.storage.getUrl(id);
   },
 });
-
-/// mutation generate upload URL (1.0/storageGenerateUploadUrl)
 
 export const mutationGenerateUploadUrl = internalMutation({
   args: {},

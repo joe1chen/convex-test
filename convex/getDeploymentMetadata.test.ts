@@ -13,21 +13,15 @@ const expected = {
 
 test("query", async () => {
   const t = convexTest({ schema });
-  expect(await t.query(api.getDeploymentMetadata.metadataQuery)).toEqual(
-    expected,
-  );
+  expect(await t.query(api.getDeploymentMetadata.metadataQuery)).toEqual(expected);
 });
 
 test("mutation", async () => {
   const t = convexTest({ schema });
-  expect(await t.mutation(api.getDeploymentMetadata.metadataMutation)).toEqual(
-    expected,
-  );
+  expect(await t.mutation(api.getDeploymentMetadata.metadataMutation)).toEqual(expected);
 });
 
 test("action", async () => {
   const t = convexTest({ schema });
-  expect(await t.action(api.getDeploymentMetadata.metadataAction)).toEqual(
-    expected,
-  );
+  expect(await t.action(api.getDeploymentMetadata.metadataAction)).toEqual(expected);
 });

@@ -71,9 +71,6 @@ export const schedule = mutation({
   },
 });
 
-// Regression test: if a nested query isn't accounted for correctly, the
-// function stack can get messed up and the `ctx.db.get` might try to look in
-// the wrong component.
 export const mutationWithNestedQuery = mutation({
   args: {},
   handler: async (ctx, _args) => {
@@ -138,8 +135,6 @@ export const metadata = query({
   },
 });
 
-// Writes a row carrying the transaction's commit timestamp, so a caller can
-// check that the app and the component share one timestamp.
 export const addWithCommitTs = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {

@@ -34,9 +34,7 @@ test("accepts _id and _creationTime", async () => {
 
 test("field names must be identifiers union", async () => {
   const schema = defineSchema({
-    a: defineTable(
-      v.union(v.object({ "a-b": v.string() }), v.object({ x: v.string() })),
-    ),
+    a: defineTable(v.union(v.object({ "a-b": v.string() }), v.object({ x: v.string() }))),
   });
   expect(() => convexTest(schema)).toThrow();
 });

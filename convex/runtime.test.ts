@@ -60,24 +60,6 @@ test("FormData", async () => {
   expect(result).toBe("hello world");
 });
 
-// TODO:
-// ------------------
-// Headers
-// Request
-// Response
-// TextDecoder
-// TextEncoder
-// atob
-// btoa
-// ReadableStream
-// ReadableStreamBYOBReader
-// ReadableStreamDefaultReader
-// TransformStream
-// WritableStream
-// WritableStreamDefaultWriter
-// CryptoKey
-// SubtleCrypto
-
 test("crypto", async () => {
   const t = convexTest(schema);
   const result = await t.run(async () => {

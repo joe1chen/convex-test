@@ -1,5 +1,5 @@
 import { api } from "./_generated/api";
-import { type Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 
 export const actionCallingQuery = action({

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { Doc } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery } from "./_generated/server";
 
 export const get = internalQuery({
@@ -14,8 +14,6 @@ export const get = internalQuery({
   },
 });
 
-/// vector search (1.0/actions/vectorSearch)
-
 export const vectorSearch = action({
   args: {
     author: v.union(v.string(), v.null()),
@@ -28,15 +26,12 @@ export const vectorSearch = action({
   ): Promise<Array<Doc<"messages"> & { score: number }>> => {
     const results = await ctx.vectorSearch("messages", "embedding", {
       vector: embedding,
-      filter: author !== null ? (q) => q.eq("author", author) : undefined,
+      filter: author === null ? undefined : (q) => q.eq("author", author),
       limit,
     });
     return Promise.all(
       results.map(async ({ _id, _score }) => {
-        const doc: Doc<"messages"> = await ctx.runQuery(
-          internal.vectorSearch.get,
-          { id: _id },
-        );
+        const doc: Doc<"messages"> = await ctx.runQuery(internal.vectorSearch.get, { id: _id });
         return {
           ...doc,
           score: _score,

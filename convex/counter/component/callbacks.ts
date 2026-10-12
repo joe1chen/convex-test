@@ -7,11 +7,7 @@ export const invoke = mutation({
   returns: v.null(),
   handler: async (ctx, { handle, ...args }) => {
     return await ctx.runMutation(
-      handle as FunctionHandle<
-        "mutation",
-        { key: string; fail?: boolean },
-        null
-      >,
+      handle as FunctionHandle<"mutation", { key: string; fail?: boolean }, null>,
       args,
     );
   },

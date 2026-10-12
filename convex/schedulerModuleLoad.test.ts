@@ -40,7 +40,5 @@ test("finishes scheduled functions with slow module loads", async () => {
   await t.finishAllScheduledFunctions(vi.runAllTimers);
 
   const messages = await t.query((ctx) => ctx.db.query("messages").collect());
-  expect(messages).toMatchObject([
-    { body: "through a slow module load", author: "AI" },
-  ]);
+  expect(messages).toMatchObject([{ body: "through a slow module load", author: "AI" }]);
 });

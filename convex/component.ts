@@ -1,8 +1,4 @@
-import {
-  internalAction,
-  internalMutation,
-  internalQuery,
-} from "./_generated/server";
+import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { components } from "./_generated/api";
 import { createFunctionHandle } from "convex/server";
 import { v } from "convex/values";
@@ -32,9 +28,7 @@ export const directCall = internalAction({
 export const mutationWithNestedQuery = internalMutation({
   args: {},
   handler: async (ctx, _args): Promise<number> => {
-    return await ctx.runMutation(
-      components.counter.public.mutationWithNestedQuery,
-    );
+    return await ctx.runMutation(components.counter.public.mutationWithNestedQuery);
   },
 });
 
@@ -57,10 +51,6 @@ export const schedule = internalMutation({
   },
 });
 
-// Note this must be a mutation because `createFunctionHandle` writes to the
-// database, and we need to commit it.
-// In a real Convex app, the function handle is automatically created on push,
-// so it does work in queries.
 export const getFunctionHandle = internalQuery({
   args: {},
   returns: v.string(),
@@ -75,21 +65,20 @@ export const callHandle = internalMutation({
     handle: v.string(),
   },
   handler: async (ctx, { handle }) => {
-    await ctx.runMutation(
-      handle as any as typeof components.counter.public.add,
-      { name: "beans", count: 3 },
-    );
+    await ctx.runMutation(handle as any as typeof components.counter.public.add, {
+      name: "beans",
+      count: 3,
+    });
   },
 });
 
 export const scheduleHandle = internalMutation({
   args: { handle: v.string() },
   handler: async (ctx, { handle }) => {
-    await ctx.scheduler.runAfter(
-      1000,
-      handle as any as typeof components.counter.public.add,
-      { name: "beans", count: 3 },
-    );
+    await ctx.scheduler.runAfter(1000, handle as any as typeof components.counter.public.add, {
+      name: "beans",
+      count: 3,
+    });
   },
 });
 
@@ -172,9 +161,6 @@ export const actionCallingComponentAction = internalAction({
 export const actionSchedulingOnBothComponents = internalAction({
   args: {},
   handler: async (ctx): Promise<null> => {
-    // Schedule mutations on both components from an action.
-    // Each component's `schedule` mutation uses ctx.scheduler.runAfter,
-    // so this exercises setTimeout within an action across components.
     await Promise.all([
       ctx.runMutation(components.counter.public.schedule, { name: "beans" }),
       ctx.runMutation(components.counter2.public.schedule, { name: "beans" }),
@@ -254,8 +240,6 @@ export const parallelSequentialComponentQueries = internalQuery({
   },
 });
 
-// Writes in both the app and the component within one transaction, so both rows
-// must land on the same commit timestamp.
 export const writeCommitTsAcrossComponents = internalMutation({
   args: {},
   handler: async (ctx) => {

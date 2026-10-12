@@ -17,18 +17,14 @@ test("query helper: getMessagesByAuthor", async () => {
     await ctx.db.insert("messages", { author: "alice", body: "goodbye" });
   });
 
-  const aliceMessages = await t.query(async (ctx) =>
-    getMessagesByAuthor(ctx, "alice"),
-  );
+  const aliceMessages = await t.query(async (ctx) => getMessagesByAuthor(ctx, "alice"));
   expect(aliceMessages).toHaveLength(2);
   expect(aliceMessages).toMatchObject([
     { author: "alice", body: "hello" },
     { author: "alice", body: "goodbye" },
   ]);
 
-  const bobMessages = await t.query(async (ctx) =>
-    getMessagesByAuthor(ctx, "bob"),
-  );
+  const bobMessages = await t.query(async (ctx) => getMessagesByAuthor(ctx, "bob"));
   expect(bobMessages).toMatchObject([{ author: "bob", body: "world" }]);
 });
 
@@ -63,14 +59,10 @@ test("query helper: getMessageBodies (helper calling helper)", async () => {
 test("mutation helper: insertMessage", async () => {
   const t = convexTest(schema);
 
-  const id = await t.mutation(async (ctx) =>
-    insertMessage(ctx, "alice", "hello"),
-  );
+  const id = await t.mutation(async (ctx) => insertMessage(ctx, "alice", "hello"));
   expect(id).toBeDefined();
 
-  const messages = await t.query(async (ctx) =>
-    getMessagesByAuthor(ctx, "alice"),
-  );
+  const messages = await t.query(async (ctx) => getMessagesByAuthor(ctx, "alice"));
   expect(messages).toMatchObject([{ author: "alice", body: "hello" }]);
 });
 
@@ -89,9 +81,7 @@ test("mutation helper: insertMessages", async () => {
   const count = await t.query(async (ctx) => countMessages(ctx));
   expect(count).toBe(3);
 
-  const aliceBodies = await t.query(async (ctx) =>
-    getMessageBodies(ctx, "alice"),
-  );
+  const aliceBodies = await t.query(async (ctx) => getMessageBodies(ctx, "alice"));
   expect(aliceBodies).toEqual(["one", "two"]);
 });
 
@@ -100,13 +90,11 @@ test("mixing helpers with inline logic", async () => {
 
   await t.mutation(async (ctx) => {
     await insertMessage(ctx, "alice", "hello");
-    // Mix helper with direct db access
     await ctx.db.insert("messages", { author: "alice", body: "world" });
   });
 
   const result = await t.query(async (ctx) => {
     const messages = await getMessagesByAuthor(ctx, "alice");
-    // Process results with inline logic
     return messages.map((m) => m.body.toUpperCase());
   });
   expect(result).toEqual(["HELLO", "WORLD"]);
@@ -121,10 +109,6 @@ test("helpers with identity", async () => {
     await insertMessage(ctx, identity!.name!, "authenticated message");
   });
 
-  const messages = await authT.query(async (ctx) =>
-    getMessagesByAuthor(ctx, "Test User"),
-  );
-  expect(messages).toMatchObject([
-    { author: "Test User", body: "authenticated message" },
-  ]);
+  const messages = await authT.query(async (ctx) => getMessagesByAuthor(ctx, "Test User"));
+  expect(messages).toMatchObject([{ author: "Test User", body: "authenticated message" }]);
 });

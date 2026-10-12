@@ -1,4 +1,4 @@
-import { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 export async function getMessagesByAuthor(ctx: QueryCtx, author: string) {
   return await ctx.db
@@ -17,11 +17,7 @@ export async function getMessageBodies(ctx: QueryCtx, author: string) {
   return messages.map((m) => m.body);
 }
 
-export async function insertMessage(
-  ctx: MutationCtx,
-  author: string,
-  body: string,
-) {
+export async function insertMessage(ctx: MutationCtx, author: string, body: string) {
   return await ctx.db.insert("messages", { author, body });
 }
 

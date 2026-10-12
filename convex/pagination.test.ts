@@ -45,7 +45,6 @@ test("paginate", async () => {
   ]);
   expect(isDone2).toEqual(true);
 
-  // Querying after done should return nothing.
   const { isDone: isDone3, page: page3 } = await t.query(api.pagination.list, {
     author: "sarah",
     paginationOptions: {
@@ -68,7 +67,6 @@ test("paginate with maximumRowsRead", async () => {
     }
   });
 
-  // With maximumRowsRead=3, we should get at most 3 docs and SplitRequired
   const result = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: null,
@@ -82,7 +80,6 @@ test("paginate with maximumRowsRead", async () => {
   expect(result.splitCursor).toBeTruthy();
   expect(result.isDone).toEqual(false);
 
-  // Continue from the continueCursor
   const result2 = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: result.continueCursor,
@@ -90,7 +87,6 @@ test("paginate with maximumRowsRead", async () => {
     },
   })) as PaginationResult<any>;
 
-  // Combined pages should cover all 10 docs
   expect(result.page.length + result2.page.length).toEqual(10);
   expect(result2.isDone).toEqual(true);
 });
@@ -106,12 +102,11 @@ test("paginate with maximumBytesRead", async () => {
     }
   });
 
-  // Use a very small byte limit to force early termination
   const result = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: null,
       numItems: 10,
-      maximumBytesRead: 1, // Very small, should stop after first doc
+      maximumBytesRead: 1,
     },
   })) as PaginationResult<any>;
 
@@ -123,7 +118,6 @@ test("paginate with maximumBytesRead", async () => {
 test("paginate with filter and maximumRowsRead", async () => {
   const t = convexTest(schema);
   await t.run(async (ctx) => {
-    // Insert many docs, only some match the filter
     for (let i = 0; i < 10; i++) {
       await ctx.db.insert("messages", {
         author: i % 3 === 0 ? "sarah" : "michal",
@@ -132,8 +126,6 @@ test("paginate with filter and maximumRowsRead", async () => {
     }
   });
 
-  // Filter for sarah (4 docs: 0, 3, 6, 9), but maximumRowsRead=5
-  // means we scan at most 5 rows from the pipeline
   const result = (await t.query(api.pagination.list, {
     author: "sarah",
     paginationOptions: {
@@ -143,7 +135,6 @@ test("paginate with filter and maximumRowsRead", async () => {
     },
   })) as PaginationResult<any>;
 
-  // Should have scanned 5 rows, getting some sarah docs but not all
   expect(result.pageStatus).toEqual("SplitRequired");
   expect(result.isDone).toEqual(false);
 });
@@ -159,7 +150,6 @@ test("paginate with endCursor", async () => {
     }
   });
 
-  // First get a page to get a cursor
   const result1 = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: null,
@@ -170,7 +160,6 @@ test("paginate with endCursor", async () => {
   expect(result1.page.length).toEqual(2);
   expect(result1.isDone).toEqual(false);
 
-  // Now get the next page
   const result2 = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: result1.continueCursor,
@@ -180,16 +169,14 @@ test("paginate with endCursor", async () => {
 
   expect(result2.page.length).toEqual(2);
 
-  // Use endCursor to re-fetch the second page bounded
   const result3 = (await t.query(api.pagination.listAll, {
     paginationOptions: {
       cursor: result1.continueCursor,
-      numItems: 100, // Large numItems, but bounded by endCursor
+      numItems: 100,
       endCursor: result2.continueCursor,
     },
   })) as PaginationResult<any>;
 
-  // Should get the same docs as result2
   expect(result3.page.length).toEqual(result2.page.length);
 });
 test("paginate with index on optional field with undefined values", async () => {
@@ -200,13 +187,13 @@ test("paginate with index on optional field with undefined values", async () => 
       body: "hello1",
       score: 10,
     });
-    await ctx.db.insert("messages", { author: "sarah", body: "hello2" }); // score undefined
+    await ctx.db.insert("messages", { author: "sarah", body: "hello2" });
     await ctx.db.insert("messages", {
       author: "sarah",
       body: "hello3",
       score: 5,
     });
-    await ctx.db.insert("messages", { author: "sarah", body: "hello4" }); // score undefined
+    await ctx.db.insert("messages", { author: "sarah", body: "hello4" });
   });
   const { continueCursor, isDone, page } = await t.query(
     api.pagination.listWithOptionalFieldIndex,
@@ -218,10 +205,9 @@ test("paginate with index on optional field with undefined values", async () => 
       },
     },
   );
-  // undefined scores should sort before defined scores
   expect(page).toMatchObject([
-    { author: "sarah", body: "hello2" }, // score undefined
-    { author: "sarah", body: "hello4" }, // score undefined
+    { author: "sarah", body: "hello2" },
+    { author: "sarah", body: "hello4" },
   ]);
   expect(isDone).toEqual(false);
   const { isDone: isDone2, page: page2 } = await t.query(
@@ -234,7 +220,6 @@ test("paginate with index on optional field with undefined values", async () => 
       },
     },
   );
-  // then defined scores in ascending order
   expect(page2).toMatchObject([
     { author: "sarah", body: "hello3", score: 5 },
     { author: "sarah", body: "hello1", score: 10 },
@@ -292,16 +277,13 @@ test("paginate with deletes and indexes", async () => {
     await ctx.db.insert("messages", { author: "jordan", body: "hello3" });
     await ctx.db.insert("messages", { author: "jordan", body: "hello4" });
   });
-  const { continueCursor, isDone, page } = await t.query(
-    api.pagination.listWithIndex,
-    {
-      author: "jordan",
-      paginationOptions: {
-        cursor: null,
-        numItems: 1,
-      },
+  const { continueCursor, isDone, page } = await t.query(api.pagination.listWithIndex, {
+    author: "jordan",
+    paginationOptions: {
+      cursor: null,
+      numItems: 1,
     },
-  );
+  });
   expect(page).toMatchObject([{ author: "jordan", body: "hello1" }]);
   expect(isDone).toEqual(false);
   await t.run(async (ctx) => {
@@ -326,16 +308,13 @@ test("paginate with deletes and indexes", async () => {
   await t.run(async (ctx) => {
     await ctx.db.delete(page2[1]._id);
   });
-  const { isDone: isDone3, page: page3 } = await t.query(
-    api.pagination.listWithIndex,
-    {
-      author: "jordan",
-      paginationOptions: {
-        cursor: continueCursor2,
-        numItems: 1,
-      },
+  const { isDone: isDone3, page: page3 } = await t.query(api.pagination.listWithIndex, {
+    author: "jordan",
+    paginationOptions: {
+      cursor: continueCursor2,
+      numItems: 1,
     },
-  );
+  });
   expect(page3).toMatchObject([{ author: "jordan", body: "hello4" }]);
   expect(isDone3).toEqual(true);
 });
@@ -349,16 +328,13 @@ test("paginate with deletes and composite index", async () => {
     await ctx.db.insert("messages", { author: "jordan", body: "hello3" });
     await ctx.db.insert("messages", { author: "jordan", body: "hello1" });
   });
-  const { continueCursor, isDone, page } = await t.query(
-    api.pagination.listWithCompositeIndex,
-    {
-      author: "jordan",
-      paginationOptions: {
-        cursor: null,
-        numItems: 1,
-      },
+  const { continueCursor, isDone, page } = await t.query(api.pagination.listWithCompositeIndex, {
+    author: "jordan",
+    paginationOptions: {
+      cursor: null,
+      numItems: 1,
     },
-  );
+  });
   expect(page).toMatchObject([{ author: "jordan", body: "hello1" }]);
   expect(isDone).toEqual(false);
   await t.run(async (ctx) => {
@@ -383,16 +359,13 @@ test("paginate with deletes and composite index", async () => {
   await t.run(async (ctx) => {
     await ctx.db.delete(page2[1]._id);
   });
-  const { isDone: isDone3, page: page3 } = await t.query(
-    api.pagination.listWithCompositeIndex,
-    {
-      author: "jordan",
-      paginationOptions: {
-        cursor: continueCursor2,
-        numItems: 1,
-      },
+  const { isDone: isDone3, page: page3 } = await t.query(api.pagination.listWithCompositeIndex, {
+    author: "jordan",
+    paginationOptions: {
+      cursor: continueCursor2,
+      numItems: 1,
     },
-  );
+  });
   expect(page3).toMatchObject([{ author: "jordan", body: "hello4" }]);
   expect(isDone3).toEqual(true);
 });
@@ -427,7 +400,6 @@ test("paginate in separate function executions does not throw", async () => {
   await t.run(async (ctx) => {
     await ctx.db.insert("messages", { author: "sarah", body: "hello" });
   });
-  // Each call is its own function execution, so the per-execution count resets.
   const a = await t.query(async (ctx) => paginateOnce(ctx));
   const b = await t.query(async (ctx) => paginateOnce(ctx));
   expect(a.page.length).toBe(1);
@@ -439,8 +411,6 @@ test("paginate once per nested function via runQuery does not throw", async () =
   await t.run(async (ctx) => {
     await ctx.db.insert("messages", { author: "sarah", body: "hello" });
   });
-  // An action invoking two queries, each paginating once. Each query is its
-  // own function execution, so this is allowed.
   const result = await t.action(async (ctx) => {
     const first = await ctx.runQuery(api.pagination.listAll, {
       paginationOptions: { cursor: null, numItems: 10 },

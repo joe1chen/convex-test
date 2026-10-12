@@ -2,8 +2,6 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 
-/// paginate (1.0/queryPage)
-
 export const list = query({
   args: {
     author: v.string(),

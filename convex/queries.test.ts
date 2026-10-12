@@ -1,5 +1,5 @@
 import { expect, it, test, vi, describe, beforeEach, afterEach } from "vitest";
-import { TestConvex, convexTest } from "../index";
+import { type TestConvex, convexTest } from "../index";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { defineSchema, defineTable } from "convex/server";
@@ -89,10 +89,7 @@ describe("system index", () => {
       return await ctx.db
         .query("messages")
         .withIndex("by_creation_time", (q) =>
-          q.lte(
-            "_creationTime",
-            new Date("2024-06-01T00:00:00.000Z").getTime(),
-          ),
+          q.lte("_creationTime", new Date("2024-06-01T00:00:00.000Z").getTime()),
         )
         .collect();
     });
@@ -138,9 +135,9 @@ test("type ordering", async () => {
         await ctx.db.insert("messages", { author, body: "hello" });
       }),
     );
-    return (
-      await ctx.db.query("messages").withIndex("author").order("desc").collect()
-    ).map(({ author }) => (author === undefined ? "UNDEFINED" : author));
+    return (await ctx.db.query("messages").withIndex("author").order("desc").collect()).map(
+      ({ author }) => (author === undefined ? "UNDEFINED" : author),
+    );
   });
   expect(authors).toMatchObject([
     { a: 1 },
@@ -160,7 +157,6 @@ test("type ordering", async () => {
 
 test("order", async () => {
   const t = convexTest(schema);
-  // Test both in and out of transaction ordering
   await t.run(async (ctx) => {
     await ctx.db.insert("messages", { author: "sarah", body: "hello1" });
   });

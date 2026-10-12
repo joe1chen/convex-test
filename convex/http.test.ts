@@ -75,9 +75,7 @@ test("parallel HTTP handlers have isolated globals", async () => {
       t.fetch("/globals?patch=first"),
       t.fetch("/globals?patch=second"),
     ]);
-    expect(
-      await Promise.all(responses.map((response) => response.json())),
-    ).toEqual([
+    expect(await Promise.all(responses.map((response) => response.json()))).toEqual([
       { before: "first", nested: "hello", after: "first" },
       { before: "second", nested: "hello", after: "second" },
     ]);

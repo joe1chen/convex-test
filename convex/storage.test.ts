@@ -5,7 +5,7 @@ import schema from "./schema";
 
 test("action store blob", async () => {
   const t = convexTest(schema);
-  const bytes = new Uint8Array([0b00001100, 0b00000000]).buffer;
+  const bytes = new Uint8Array([0b0000_1100, 0b0000_0000]).buffer;
   const storageId = await t.action(internal.storage.actionStoreBlob, { bytes });
   const result = await t.query(internal.storage.listFiles);
   expect(result).toMatchObject([
@@ -19,7 +19,7 @@ test("action store blob", async () => {
 
 test("action get blob", async () => {
   const t = convexTest(schema);
-  const bytes = new Uint8Array([0b00001100, 0b00000000]).buffer;
+  const bytes = new Uint8Array([0b0000_1100, 0b0000_0000]).buffer;
   const storageId = await t.action(internal.storage.actionStoreBlob, { bytes });
   const result = await t.action(internal.storage.actionGetBlob, {
     id: storageId,
@@ -29,7 +29,7 @@ test("action get blob", async () => {
 
 test("action delete blob", async () => {
   const t = convexTest(schema);
-  const bytes = new Uint8Array([0b00001100, 0b00000000]).buffer;
+  const bytes = new Uint8Array([0b0000_1100, 0b0000_0000]).buffer;
   const storageId = await t.action(internal.storage.actionStoreBlob, { bytes });
   await t.action(internal.storage.actionDeleteBlob, { id: storageId });
   const result = await t.action(internal.storage.actionGetBlob, {
@@ -41,7 +41,7 @@ test("action delete blob", async () => {
 test("mutation delete blob", async () => {
   const t = convexTest(schema);
   const storageId = await t.run(async (ctx) => {
-    const bytes = new Uint8Array([0b00001100, 0b00000000]).buffer;
+    const bytes = new Uint8Array([0b0000_1100, 0b0000_0000]).buffer;
     return await ctx.storage.store(new Blob([bytes]));
   });
   await t.mutation(internal.storage.mutationDeleteBlob, { id: storageId });
@@ -53,7 +53,7 @@ test("mutation delete blob", async () => {
 
 test("query get URL", async () => {
   const t = convexTest(schema);
-  const bytes = new Uint8Array([0b00001100, 0b00000000]).buffer;
+  const bytes = new Uint8Array([0b0000_1100, 0b0000_0000]).buffer;
   const id = await t.action(internal.storage.actionStoreBlob, { bytes });
   {
     const result = await t.query(internal.storage.queryGetUrl, { id });

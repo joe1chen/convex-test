@@ -10,11 +10,7 @@ import {
   makeFunctionReference,
 } from "convex/server";
 import { v } from "convex/values";
-import {
-  defineTestApp,
-  type ComponentRegistration,
-  type TestConvex,
-} from "../index";
+import { defineTestApp, type ComponentRegistration, type TestConvex } from "../index";
 import { components } from "./_generated/api";
 import counterTest from "./counter/test";
 import type * as counterCallbacks from "./counter/component/callbacks";
@@ -112,9 +108,7 @@ test("defines typed functions without generated modules", async () => {
   expectTypeOf(event!.key).toEqualTypeOf<string>();
   expect(await t.query(api.test.list, { key: "hello" })).toEqual(["hello"]);
   expect(getFunctionName(api.test.bar)).toBe("test:bar");
-  expect(getFunctionName(internal.test.callbacks.complete)).toBe(
-    "test/callbacks:complete",
-  );
+  expect(getFunctionName(internal.test.callbacks.complete)).toBe("test/callbacks:complete");
 });
 
 test("public and internal functions can call sibling modules", async () => {
@@ -128,9 +122,9 @@ test("public and internal functions can call sibling modules", async () => {
 
 test("preserves argument validation, schema validation, and rollback", async () => {
   const t = createTest();
-  await expect(
-    t.mutation(internal.test.callbacks.complete, { key: 123 as any }),
-  ).rejects.toThrow("Validator error");
+  await expect(t.mutation(internal.test.callbacks.complete, { key: 123 as any })).rejects.toThrow(
+    "Validator error",
+  );
   expect(callback).not.toHaveBeenCalled();
   await expect(
     t.run(async (ctx) => await ctx.db.insert("events", { key: 123 as any })),
@@ -152,9 +146,9 @@ test("preserves return validation", async () => {
       }),
     },
   });
-  await expect(
-    fixture.createTest().query(fixture.api.invalid.result),
-  ).rejects.toThrow("Return value validation failed");
+  await expect(fixture.createTest().query(fixture.api.invalid.result)).rejects.toThrow(
+    "Return value validation failed",
+  );
 });
 
 test("instances and identities retain their own state", async () => {
@@ -166,9 +160,7 @@ test("instances and identities retain their own state", async () => {
   expect(await first.query(api.test.list, { key: "first" })).toEqual(["first"]);
   expect(await second.query(api.test.list, { key: "first" })).toEqual([]);
   expect(await first.query(api.test.list, { key: "second" })).toEqual([]);
-  expect(await second.query(api.test.list, { key: "second" })).toEqual([
-    "second",
-  ]);
+  expect(await second.query(api.test.list, { key: "second" })).toEqual(["second"]);
   expect(await asAlice.query(api.test.identity)).toBe("Alice");
   expect(await first.query(api.test.identity)).toBeNull();
   expect(await second.query(api.test.identity)).toBeNull();
@@ -180,9 +172,7 @@ test("schedules named functions and their nested calls", async () => {
   await t.mutation(internal.test.callbacks.schedule, { key: "scheduled" });
   await t.finishAllScheduledFunctions(vi.runAllTimers);
   expect(callback).toHaveBeenCalledTimes(1);
-  expect(await t.query(api.test.list, { key: "scheduled" })).toEqual([
-    "scheduled",
-  ]);
+  expect(await t.query(api.test.list, { key: "scheduled" })).toEqual(["scheduled"]);
 });
 
 test("accepts a component's default testing helper and custom registration name", async () => {
@@ -199,31 +189,24 @@ test("accepts a component's default testing helper and custom registration name"
       count: 5,
     });
   });
-  expect(
-    await t.query(components.counter.public.count, { name: "beans" }),
-  ).toBe(3);
-  expect(
-    await t.query(components.counter2.public.count, { name: "beans" }),
-  ).toBe(5);
+  expect(await t.query(components.counter.public.count, { name: "beans" })).toBe(3);
+  expect(await t.query(components.counter2.public.count, { name: "beans" })).toBe(5);
   await t.mutation(api.test.bar, { key: "application" });
-  expect(await t.query(api.test.list, { key: "application" })).toEqual([
-    "application",
-  ]);
+  expect(await t.query(api.test.list, { key: "application" })).toEqual(["application"]);
 
   const other = createTest();
-  await expect(
-    other.query(components.counter.public.count, { name: "beans" }),
-  ).rejects.toThrow('Component "counter" is not registered');
+  await expect(other.query(components.counter.public.count, { name: "beans" })).rejects.toThrow(
+    'Component "counter" is not registered',
+  );
   counterTest.register(other);
-  expect(
-    await other.query(components.counter.public.count, { name: "beans" }),
-  ).toBe(0);
+  expect(await other.query(components.counter.public.count, { name: "beans" })).toBe(0);
 });
 
 test("components invoke application callbacks through function handles", async () => {
-  const register: ComponentRegistration<
-    ApiFromModules<{ callbacks: typeof counterCallbacks }>
-  > = (t, name) => {
+  const register: ComponentRegistration<ApiFromModules<{ callbacks: typeof counterCallbacks }>> = (
+    t,
+    name,
+  ) => {
     counterTest.register(t, name);
   };
   const componentApp = defineTestApp({
@@ -239,9 +222,7 @@ test("components invoke application callbacks through function handles", async (
   });
   await t.mutation(counter.callbacks.invoke, { handle, key: "callback" });
   expect(callback).toHaveBeenCalledTimes(1);
-  expect(await t.query(api.test.list, { key: "callback" })).toEqual([
-    "callback",
-  ]);
+  expect(await t.query(api.test.list, { key: "callback" })).toEqual(["callback"]);
   await expect(
     t.mutation(counter.callbacks.invoke, { handle, key: "failed", fail: true }),
   ).rejects.toThrow("callback failed");
@@ -255,9 +236,7 @@ test("supports default exports and excludes ordinary exports from API types", as
       helper: () => "ordinary export",
     },
   });
-  expect(await fixture.createTest().query(fixture.api.example.default)).toBe(
-    42,
-  );
+  expect(await fixture.createTest().query(fixture.api.example.default)).toBe(42);
   // @ts-expect-error Ordinary exports are not function references.
   void fixture.api.example.helper;
 });
@@ -267,14 +246,10 @@ test("empty definitions support inline calls and report missing modules", async 
   await t.mutation(async (ctx) => {
     await ctx.db.insert("events", { key: "inline" });
   });
-  expect(
-    await t.query(
-      async (ctx) => (await ctx.db.query("events").collect()).length,
-    ),
-  ).toBe(1);
-  await expect(
-    t.query(makeFunctionReference<"query">("missing:query")),
-  ).rejects.toThrow('Could not find module for: "missing"');
+  expect(await t.query(async (ctx) => (await ctx.db.query("events").collect()).length)).toBe(1);
+  await expect(t.query(makeFunctionReference<"query">("missing:query"))).rejects.toThrow(
+    'Could not find module for: "missing"',
+  );
 });
 
 test("forwards transaction limit options to the normal test runtime", async () => {
@@ -286,7 +261,6 @@ test("forwards transaction limit options to the normal test runtime", async () =
 });
 
 test("rejects incorrect function references and schema usage at compile time", () => {
-  // This function is typechecked but deliberately never executed.
   const checkTypes = async () => {
     const t = createTest();
     // @ts-expect-error Arguments are inferred from validators.

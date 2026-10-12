@@ -33,7 +33,6 @@ test("direct call", async () => {
 test("generated attributes", async () => {
   const t = testWithCounter();
   const x = await t.action(internal.component.directCall);
-  // const x = await t.query(internal.components.directCall2);
   expect(x).toEqual(3);
 });
 
@@ -96,12 +95,8 @@ test("parallel queries on different components", async () => {
 test("scheduled mutations on components don't conflict with nested locks", async () => {
   vi.useFakeTimers();
   const t = testWithTwoCounters();
-  // Schedule mutations on both components in parallel (nested sub-transactions)
   await t.mutation(internal.component.scheduleOnBothComponents);
-  // Run all scheduled functions - these execute as top-level transactions
-  // and should not deadlock with the nested lock system
   await t.finishAllScheduledFunctions(vi.runAllTimers);
-  // Verify both scheduled mutations completed
   const [count1, count2] = await Promise.all([
     t.query(components.counter.public.count, { name: "beans" }),
     t.query(components.counter2.public.count, { name: "beans" }),
@@ -113,8 +108,6 @@ test("scheduled mutations on components don't conflict with nested locks", async
 
 test("parallel actions on different components don't corrupt function stacks", async () => {
   const t = testWithTwoCounters();
-  // Run two actions in parallel, each operating on a different component.
-  // Without per-action function stacks, the shared stack would get corrupted.
   const [count1, count2] = await Promise.all([
     t.action(internal.component.actionOnCounter1),
     t.action(internal.component.actionOnCounter2),
@@ -147,9 +140,7 @@ test("auth does not propagate across component boundaries from action", async ()
 test("auth does not propagate across component boundaries from action to action", async () => {
   const t = testWithCounter();
   const asSarah = t.withIdentity({ name: "Sarah" });
-  const name = await asSarah.action(
-    internal.component.actionCallingComponentAction,
-  );
+  const name = await asSarah.action(internal.component.actionCallingComponentAction);
   expect(name).toBeNull();
 });
 
@@ -163,9 +154,6 @@ test("auth applies to directly called component function", async () => {
 test("parallel actions scheduling across components via setTimeout", async () => {
   vi.useFakeTimers();
   const t = testWithTwoCounters();
-  // Run two actions in parallel: one on counter1, one on counter2.
-  // Meanwhile, a third action schedules mutations on both components
-  // (each component's `schedule` uses ctx.scheduler.runAfter, i.e. setTimeout).
   const [count1, count2] = await Promise.all([
     t.action(internal.component.actionOnCounter1),
     t.action(internal.component.actionOnCounter2),
@@ -173,9 +161,7 @@ test("parallel actions scheduling across components via setTimeout", async () =>
   ]);
   expect(count1).toEqual(10);
   expect(count2).toEqual(20);
-  // Now let the scheduled functions fire and complete.
   await t.finishAllScheduledFunctions(vi.runAllTimers);
-  // Each component got +1 from the scheduled add.
   const finalCount1 = await t.query(components.counter.public.count, {
     name: "beans",
   });
@@ -189,13 +175,9 @@ test("parallel actions scheduling across components via setTimeout", async () =>
 
 test("separate convexTest instances are isolated with scheduling", async () => {
   vi.useFakeTimers();
-  // Two completely independent test instances running in parallel.
-  // Each schedules mutations on its own components via setTimeout.
-  // They must not interfere with each other.
   const t1 = testWithTwoCounters();
   const t2 = testWithTwoCounters();
 
-  // Seed different data in each instance.
   await Promise.all([
     t1.mutation(components.counter.public.add, {
       name: "beans",
@@ -207,37 +189,30 @@ test("separate convexTest instances are isolated with scheduling", async () => {
     }),
   ]);
 
-  // Run actions that schedule via setTimeout on both instances in parallel.
   await Promise.all([
     t1.action(internal.component.actionSchedulingOnBothComponents),
     t2.action(internal.component.actionSchedulingOnBothComponents),
   ]);
 
-  // Let both instances' scheduled functions fire.
   await Promise.all([
     t1.finishAllScheduledFunctions(vi.runAllTimers),
     t2.finishAllScheduledFunctions(vi.runAllTimers),
   ]);
 
-  // Each instance's counter should reflect only its own data.
   const count1 = await t1.query(components.counter.public.count, {
     name: "beans",
   });
   const count2 = await t2.query(components.counter.public.count, {
     name: "beans",
   });
-  // t1: 100 (seeded) + 1 (scheduled) = 101
   expect(count1).toEqual(101);
-  // t2: 200 (seeded) + 1 (scheduled) = 201
   expect(count2).toEqual(201);
   vi.useRealTimers();
 });
 
 test("parallel sequential cross-component queries (issue #80)", async () => {
   const t = testWithTwoCounters();
-  const result = await t.query(
-    internal.component.parallelSequentialComponentQueries,
-  );
+  const result = await t.query(internal.component.parallelSequentialComponentQueries);
   expect(result).toMatchObject({
     count1a: 0,
     count1b: 0,
@@ -248,9 +223,7 @@ test("parallel sequential cross-component queries (issue #80)", async () => {
 
 test("parallel sequential cross-component actions", async () => {
   const t = testWithTwoCounters();
-  const result = await t.action(
-    internal.component.parallelSequentialComponentActions,
-  );
+  const result = await t.action(internal.component.parallelSequentialComponentActions);
   expect(result).toMatchObject({
     count1a: 0,
     count1b: 0,

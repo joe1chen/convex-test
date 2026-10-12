@@ -24,7 +24,7 @@ test("withSearchIndex .eq with undefined values", async () => {
     await ctx.db.insert("messages", {
       body: "Goodbye world",
       author: "bob",
-      deletionTime: 123456,
+      deletionTime: 123_456,
     });
     await ctx.db.insert("messages", {
       body: "Test message",
@@ -34,35 +34,27 @@ test("withSearchIndex .eq with undefined values", async () => {
   const undefinedResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("messages")
-      .withSearchIndex("body", (q) =>
-        q.search("body", "world").eq("deletionTime", undefined),
-      )
+      .withSearchIndex("body", (q) => q.search("body", "world").eq("deletionTime", undefined))
       .collect();
   });
 
-  expect(undefinedResults).toMatchObject([
-    { body: "Hello world", author: "alice" },
-  ]);
+  expect(undefinedResults).toMatchObject([{ body: "Hello world", author: "alice" }]);
 
   const definedResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("messages")
-      .withSearchIndex("body", (q) =>
-        q.search("body", "world").eq("deletionTime", 123456),
-      )
+      .withSearchIndex("body", (q) => q.search("body", "world").eq("deletionTime", 123_456))
       .collect();
   });
 
   expect(definedResults).toMatchObject([
-    { body: "Goodbye world", author: "bob", deletionTime: 123456 },
+    { body: "Goodbye world", author: "bob", deletionTime: 123_456 },
   ]);
 
   const undefinedAuthorResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("messages")
-      .withSearchIndex("body", (q) =>
-        q.search("body", "message").eq("author", undefined),
-      )
+      .withSearchIndex("body", (q) => q.search("body", "message").eq("author", undefined))
       .collect();
   });
 
@@ -71,15 +63,11 @@ test("withSearchIndex .eq with undefined values", async () => {
   const definedAuthorResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("messages")
-      .withSearchIndex("body", (q) =>
-        q.search("body", "world").eq("author", "alice"),
-      )
+      .withSearchIndex("body", (q) => q.search("body", "world").eq("author", "alice"))
       .collect();
   });
 
-  expect(definedAuthorResults).toMatchObject([
-    { body: "Hello world", author: "alice" },
-  ]);
+  expect(definedAuthorResults).toMatchObject([{ body: "Hello world", author: "alice" }]);
 });
 
 test("withSearchIndex .eq undefined vs null distinction", async () => {
@@ -103,9 +91,7 @@ test("withSearchIndex .eq undefined vs null distinction", async () => {
   const undefinedResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("items")
-      .withSearchIndex("name", (q) =>
-        q.search("name", "item").eq("status", undefined),
-      )
+      .withSearchIndex("name", (q) => q.search("name", "item").eq("status", undefined))
       .collect();
   });
 
@@ -114,9 +100,7 @@ test("withSearchIndex .eq undefined vs null distinction", async () => {
   const nullResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("items")
-      .withSearchIndex("name", (q) =>
-        q.search("name", "item").eq("status", null),
-      )
+      .withSearchIndex("name", (q) => q.search("name", "item").eq("status", null))
       .collect();
   });
 
@@ -125,9 +109,7 @@ test("withSearchIndex .eq undefined vs null distinction", async () => {
   const definedResults = await t.run(async (ctx) => {
     return await ctx.db
       .query("items")
-      .withSearchIndex("name", (q) =>
-        q.search("name", "item").eq("status", "active"),
-      )
+      .withSearchIndex("name", (q) => q.search("name", "item").eq("status", "active"))
       .collect();
   });
 

@@ -3,7 +3,6 @@ import { convexTest } from "../index";
 import { internal } from "./_generated/api";
 import schema from "./schema";
 
-// Keep this first so the stub is installed before any call to convexTest.
 test("restoring a global stub installed before initialization preserves isolation", async () => {
   const originalAtob = globalThis.atob;
   vi.stubGlobal("atob", () => "test mock");
@@ -59,8 +58,7 @@ test.each(["action", "query", "mutation", "run"] as const)(
     const t = convexTest(schema);
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn(async () => new Response("test mock"));
-    const readFetch = async () =>
-      (await fetch("https://unused.invalid")).text();
+    const readFetch = async () => (await fetch("https://unused.invalid")).text();
     const call = {
       action: () => t.action(readFetch),
       query: () => t.query(readFetch),

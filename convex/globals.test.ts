@@ -6,11 +6,8 @@ import schema from "./schema";
 test("mutation: nested query sees real globals, not patched ones", async () => {
   const t = convexTest(schema);
   const result = await t.mutation(internal.globals.mutationPatchingGlobal);
-  // Handler sees its own patch
   expect(result.before).toBe("patched-by-mutation");
-  // Nested query sees real atob
   expect(result.nested).toBe("hello");
-  // After nested call, patch is restored
   expect(result.after).toBe("patched-by-mutation");
 });
 
@@ -34,7 +31,6 @@ test("nested mutations do not consume the caller's random sequence", async () =>
       }
     });
 
-  // Replaying a recorded child result must not change the caller's sequence.
   expect(await sample(true)).toEqual([0.1, 0.2]);
   expect(await sample(false)).toEqual([0.1, 0.2]);
 });
@@ -91,7 +87,6 @@ test.each(["process", "Crypto", "crypto", "CryptoKey", "SubtleCrypto"])(
         after: "undefined",
       });
     } finally {
-      // Keep the runner usable even when isolation regresses for process.
       if (globals[name] !== original) globals[name] = original;
     }
   },
@@ -108,10 +103,8 @@ test("action: nested mutation sees real globals, not patched ones", async () => 
 test("nested action gets its own global context", async () => {
   const t = convexTest(schema);
   const result = await t.action(internal.globals.actionPatchingGlobalNested);
-  // Outer sees its own patch before and after
   expect(result.outerBefore).toBe("patched-by-outer");
   expect(result.outerAfter).toBe("patched-by-outer");
-  // Inner starts with real atob, then patches its own
   expect(result.inner.before).toBe("hello");
   expect(result.inner.after).toBe("patched-by-inner");
 });
@@ -122,16 +115,13 @@ test("parallel actions have isolated globals", async () => {
     t.action(api.globals.actionPatchA, { delayMs: 10 }),
     t.action(api.globals.actionPatchB, { delayMs: 10 }),
   ]);
-  // Each action should see only its own patch
   expect(resultA).toBe("patched-A");
   expect(resultB).toBe("patched-B");
 });
 
 test("globals are clean after handler that patched them", async () => {
   const t = convexTest(schema);
-  // First, run an action that patches atob
   await t.action(internal.globals.actionPatchingGlobal);
-  // Then run a fresh action — it should see the real atob
   const result = await t.action(internal.globals.readAtobAction);
   expect(result).toBe("hello");
 });
@@ -152,9 +142,9 @@ test("mutation: fetch is not supported", async () => {
 
 test("mutation: setTimeout is not supported", async () => {
   const t = convexTest(schema);
-  await expect(
-    t.mutation(internal.globals.mutationUsingSetTimeout),
-  ).rejects.toThrow(/`setTimeout` is not supported/);
+  await expect(t.mutation(internal.globals.mutationUsingSetTimeout)).rejects.toThrow(
+    /`setTimeout` is not supported/,
+  );
 });
 
 test("query: setInterval is not supported", async () => {
@@ -200,7 +190,6 @@ test("inline mutation: patches persist across DB reads and are cleaned up afterw
   });
 
   expect(result.before).toBe("patched-inline");
-  // atob should still be patched after the db query (same handler context)
   expect(result.after).toBe("patched-inline");
   expect(result.count).toBe(1);
   expect(await t.mutation(async () => atob("aGVsbG8="))).toBe("hello");

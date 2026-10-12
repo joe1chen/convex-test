@@ -1,8 +1,8 @@
 import { expect, test, describe, vi } from "vitest";
-import { convexTest, TestConvexForDataModel } from "../index";
+import { convexTest, type TestConvexForDataModel } from "../index";
 import schema from "./schema";
 import { api } from "./_generated/api";
-import { DataModel } from "./_generated/dataModel";
+import type { DataModel } from "./_generated/dataModel";
 
 test("generated attributes", async () => {
   const t = convexTest(schema);
@@ -18,20 +18,15 @@ test("generated attributes", async () => {
 test("accessors are immutable", async () => {
   const t = convexTest(schema);
   const asSarah = t.withIdentity({ name: "Sarah" });
-  // A narrowed accessor supports everything the original one does, including
-  // being narrowed again.
   const asMichal = asSarah.withIdentity({ name: "Michal" });
   const identity = (t: TestConvexForDataModel<DataModel>) =>
     t.run((ctx) => ctx.auth.getUserIdentity());
   expect(await identity(asMichal)).toMatchObject({ name: "Michal" });
-  // Neither of the accessors it was derived from is affected.
   expect(await identity(asSarah)).toMatchObject({ name: "Sarah" });
   expect(await identity(t)).toEqual(null);
 });
 
-async function runTest(
-  fn: (t: TestConvexForDataModel<DataModel>) => Promise<string | null>,
-) {
+async function runTest(fn: (t: TestConvexForDataModel<DataModel>) => Promise<string | null>) {
   const t = convexTest(schema);
   const asSarah = t.withIdentity({ name: "Sarah" });
   const name = await fn(asSarah);
@@ -43,9 +38,7 @@ describe("action auth", () => {
     await runTest((t) => t.action(api.authentication.actionName));
   });
   test("action inline", async () => {
-    await runTest((t) =>
-      t.action(async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null),
-    );
+    await runTest((t) => t.action(async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null));
   });
   test("action calling query", async () => {
     await runTest((t) => t.action(api.authentication.actionCallingQuery));
@@ -57,9 +50,7 @@ describe("action auth", () => {
     await runTest((t) => t.action(api.authentication.actionCallingAction));
   });
   test("action calling action calling query", async () => {
-    await runTest((t) =>
-      t.action(api.authentication.actionCallingActionCallingQuery),
-    );
+    await runTest((t) => t.action(api.authentication.actionCallingActionCallingQuery));
   });
 });
 
@@ -69,23 +60,17 @@ describe("mutation auth", () => {
   });
   test("mutation inline", async () => {
     await runTest((t) =>
-      t.mutation(
-        async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null,
-      ),
+      t.mutation(async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null),
     );
   });
   test("mutation calling query", async () => {
     await runTest((t) => t.mutation(api.authentication.mutationCallingQuery));
   });
   test("mutation calling mutation", async () => {
-    await runTest((t) =>
-      t.mutation(api.authentication.mutationCallingMutation),
-    );
+    await runTest((t) => t.mutation(api.authentication.mutationCallingMutation));
   });
   test("mutation calling mutation calling query", async () => {
-    await runTest((t) =>
-      t.mutation(api.authentication.mutationCallingMutationCallingQuery),
-    );
+    await runTest((t) => t.mutation(api.authentication.mutationCallingMutationCallingQuery));
   });
 });
 
@@ -94,9 +79,7 @@ describe("query auth", () => {
     await runTest((t) => t.query(api.authentication.queryName));
   });
   test("query inline", async () => {
-    await runTest((t) =>
-      t.query(async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null),
-    );
+    await runTest((t) => t.query(async (ctx) => (await ctx.auth.getUserIdentity())?.name ?? null));
   });
   test("query calling query", async () => {
     await runTest((t) => t.query(api.authentication.queryCallingQuery));
@@ -107,15 +90,10 @@ test("scheduled function does not receive auth", async () => {
   vi.useFakeTimers();
   const t = convexTest(schema);
   const asSarah = t.withIdentity({ name: "Sarah" });
-  // Sarah schedules a query that checks auth
   const scheduled = await asSarah.mutation(api.authentication.scheduledNoAuth);
   await t.finishAllScheduledFunctions(vi.runAllTimers);
-  const result = await t.query((ctx) =>
-    ctx.db.system.get("_scheduled_functions", scheduled),
-  );
+  const result = await t.query((ctx) => ctx.db.system.get("_scheduled_functions", scheduled));
   expect(result?.state.kind).toBe("success");
 
   vi.useRealTimers();
-  // The scheduled query should have run without auth (no error = pass).
-  // queryName returns undefined when there's no identity, which is fine.
 });

@@ -6,7 +6,6 @@ export const queryWithArgs = query({
   args: {
     a: v.number(),
   },
-  // Never gets called in the test
   /* v8 ignore next */
   handler: () => {},
 });
@@ -17,7 +16,6 @@ export const mutationWithArgs = mutation({
   args: {
     a: v.number(),
   },
-  // Never gets called in the test
   /* v8 ignore next */
   handler: () => {},
 });
@@ -28,7 +26,6 @@ export const actionWithArgs = action({
   args: {
     a: v.number(),
   },
-  // Never gets called in the test
   /* v8 ignore next */
   handler: () => {},
 });
@@ -47,12 +44,9 @@ export const queryWithOptionalArgs = query({
 export const componentMutationWithNumberArg = mutation({
   args: { a: v.any() },
   handler: (ctx, args) => {
-    const result = ctx.runMutation(
-      components.counter.public.mutationWithNumberArg,
-      {
-        a: args.a,
-      },
-    );
+    const result = ctx.runMutation(components.counter.public.mutationWithNumberArg, {
+      a: args.a,
+    });
     return result;
   },
 });

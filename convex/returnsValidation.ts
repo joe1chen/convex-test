@@ -1,8 +1,6 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 
-// Query that returns a document but the return validator is INCOMPLETE
-// (missing _creationTime which Convex auto-adds to all documents)
 export const queryWithIncompleteReturnValidator = query({
   args: {},
   returns: v.union(
@@ -13,7 +11,6 @@ export const queryWithIncompleteReturnValidator = query({
       body: v.string(),
       embedding: v.optional(v.array(v.number())),
       score: v.optional(v.number()),
-      // _creationTime: v.number(), <-- INTENTIONALLY MISSING
     }),
   ),
   handler: async (ctx) => {
@@ -21,7 +18,6 @@ export const queryWithIncompleteReturnValidator = query({
   },
 });
 
-// Query with correct return validator (includes _creationTime)
 export const queryWithCorrectReturnValidator = query({
   args: {},
   returns: v.union(
@@ -40,7 +36,6 @@ export const queryWithCorrectReturnValidator = query({
   },
 });
 
-// Query returning primitive
 export const queryReturningNumber = query({
   args: {},
   returns: v.number(),
@@ -49,7 +44,6 @@ export const queryReturningNumber = query({
   },
 });
 
-// Query with wrong primitive type
 export const queryReturningWrongType = query({
   args: {},
   returns: v.string(),
@@ -58,7 +52,6 @@ export const queryReturningWrongType = query({
   },
 });
 
-// Mutation with incomplete return validator
 export const mutationWithIncompleteReturnValidator = mutation({
   args: { author: v.string(), body: v.string() },
   returns: v.object({
@@ -67,7 +60,6 @@ export const mutationWithIncompleteReturnValidator = mutation({
     body: v.string(),
     embedding: v.optional(v.array(v.number())),
     score: v.optional(v.number()),
-    // _creationTime: v.number(), <-- INTENTIONALLY MISSING
   }),
   handler: async (ctx, args) => {
     const id = await ctx.db.insert("messages", args);
@@ -75,7 +67,6 @@ export const mutationWithIncompleteReturnValidator = mutation({
   },
 });
 
-// Mutation with correct return validator
 export const mutationWithCorrectReturnValidator = mutation({
   args: { author: v.string(), body: v.string() },
   returns: v.object({
@@ -92,7 +83,6 @@ export const mutationWithCorrectReturnValidator = mutation({
   },
 });
 
-// Query without return validator (should pass - no validation)
 export const queryWithoutReturnValidator = query({
   args: {},
   handler: async (ctx) => {
@@ -100,7 +90,6 @@ export const queryWithoutReturnValidator = query({
   },
 });
 
-// Query returning array with incomplete item validator
 export const queryReturningArrayWithIncompleteValidator = query({
   args: {},
   returns: v.array(
@@ -110,7 +99,6 @@ export const queryReturningArrayWithIncompleteValidator = query({
       body: v.string(),
       embedding: v.optional(v.array(v.number())),
       score: v.optional(v.number()),
-      // Missing _creationTime
     }),
   ),
   handler: async (ctx) => {
@@ -118,7 +106,6 @@ export const queryReturningArrayWithIncompleteValidator = query({
   },
 });
 
-// Action with incomplete return validator
 export const actionWithIncompleteReturnValidator = action({
   args: {},
   returns: v.object({
@@ -129,7 +116,6 @@ export const actionWithIncompleteReturnValidator = action({
   },
 });
 
-// Action with correct return validator
 export const actionWithCorrectReturnValidator = action({
   args: {},
   returns: v.object({

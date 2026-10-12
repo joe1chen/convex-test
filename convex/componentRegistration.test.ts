@@ -17,10 +17,10 @@ import * as counterTestNamespace from "./counter/test";
 
 const schema = defineSchema({});
 
-// Match existing component entrypoints without the API annotation.
-function legacyRegister<
-  Schema extends SchemaDefinition<GenericSchema, boolean>,
->(t: TestConvex<Schema>, name = "counter") {
+function legacyRegister<Schema extends SchemaDefinition<GenericSchema, boolean>>(
+  t: TestConvex<Schema>,
+  name = "counter",
+) {
   counterTest.register(t, name);
 }
 
@@ -35,9 +35,7 @@ test("infers component APIs from testing exports and uses them in fixture functi
   });
   expectTypeOf(app.components.counter).toEqualTypeOf<ComponentApi<"counter">>();
   expectTypeOf(app.components.renamed).toEqualTypeOf<ComponentApi<"renamed">>();
-  expectTypeOf(app.components.namespace).toEqualTypeOf<
-    ComponentApi<"namespace">
-  >();
+  expectTypeOf(app.components.namespace).toEqualTypeOf<ComponentApi<"namespace">>();
 
   const { api, createTest } = app.defineModules({
     test: {
@@ -58,17 +56,13 @@ test("infers component APIs from testing exports and uses them in fixture functi
   });
   const t = createTest();
   expect(await t.mutation(api.test.increment, { name: "beans" })).toBe(1);
-  expect(
-    await t.query(app.components.renamed.public.count, { name: "beans" }),
-  ).toBe(0);
+  expect(await t.query(app.components.renamed.public.count, { name: "beans" })).toBe(0);
   const counts = await t.action(app.components.counter.public.countMany, {
     names: ["beans"],
   });
   expectTypeOf(counts).toEqualTypeOf<number[]>();
   expect(counts).toEqual([1]);
-  expect(
-    await t.query(app.components.namespace.public.count, { name: "beans" }),
-  ).toBe(0);
+  expect(await t.query(app.components.namespace.public.count, { name: "beans" })).toBe(0);
 });
 
 test("calls registration helpers for each fresh instance using the configured names", async () => {
@@ -98,18 +92,10 @@ test("calls registration helpers for each fresh instance using the configured na
     name: "beans",
     count: 5,
   });
-  expect(
-    await first.query(app.components.first.public.count, { name: "beans" }),
-  ).toBe(3);
-  expect(
-    await first.query(app.components.second.public.count, { name: "beans" }),
-  ).toBe(5);
-  expect(
-    await second.query(app.components.first.public.count, { name: "beans" }),
-  ).toBe(0);
-  expect(
-    await second.query(app.components.second.public.count, { name: "beans" }),
-  ).toBe(0);
+  expect(await first.query(app.components.first.public.count, { name: "beans" })).toBe(3);
+  expect(await first.query(app.components.second.public.count, { name: "beans" })).toBe(5);
+  expect(await second.query(app.components.first.public.count, { name: "beans" })).toBe(0);
+  expect(await second.query(app.components.second.public.count, { name: "beans" })).toBe(0);
 });
 
 test("registration returns usable references for default and renamed top-level instances", async () => {
@@ -123,10 +109,7 @@ test("registration returns usable references for default and renamed top-level i
 });
 
 test("accepts and composes existing registration signatures", async () => {
-  const broad = (
-    t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
-    name?: string,
-  ) => {
+  const broad = (t: TestConvex<SchemaDefinition<GenericSchema, boolean>>, name?: string) => {
     legacyRegister(t, name);
   };
   const anySchema = (t: TestConvex<any>, name?: string) => {
@@ -138,7 +121,6 @@ test("accepts and composes existing registration signatures", async () => {
   const requiredName = (t: TestConvexRoot<any>, name: string) => {
     anyModel(t, name);
   };
-  // Assignment checks compatibility before the API type is supplied by a cast.
   const helpers: ComponentRegistration<ComponentApi>[] = [
     legacyRegister,
     broad,
@@ -151,17 +133,13 @@ test("accepts and composes existing registration signatures", async () => {
       schema,
       components: { renamed: { register } },
     });
-    expectTypeOf(app.components.renamed).toEqualTypeOf<
-      ComponentApi<"renamed">
-    >();
+    expectTypeOf(app.components.renamed).toEqualTypeOf<ComponentApi<"renamed">>();
     const t = app.defineModules({}).createTest();
     await t.mutation(app.components.renamed.public.add, {
       name: "beans",
       count: 1,
     });
-    expect(
-      await t.query(app.components.renamed.public.count, { name: "beans" }),
-    ).toBe(1);
+    expect(await t.query(app.components.renamed.public.count, { name: "beans" })).toBe(1);
   }
 });
 
@@ -175,9 +153,7 @@ test("accepts assertions for existing unannotated helpers", async () => {
       },
     },
   });
-  expectTypeOf(app.components.sampleComponent).toEqualTypeOf<
-    ComponentApi<"sampleComponent">
-  >();
+  expectTypeOf(app.components.sampleComponent).toEqualTypeOf<ComponentApi<"sampleComponent">>();
   const t = app.defineModules({}).createTest();
   await t.mutation(app.components.sampleComponent.public.add, {
     name: "beans",
@@ -191,7 +167,6 @@ test("accepts assertions for existing unannotated helpers", async () => {
 });
 
 test("custom registration callbacks install nested dependencies under renamed parents", async () => {
-  // These references are relative to the component in which the handler runs.
   const parent = defineTestApp({
     schema: counterTest.schema,
     components: { nested: counterTest },
@@ -206,9 +181,10 @@ test("custom registration callbacks install nested dependencies under renamed pa
       });
     },
   });
-  const register: ComponentRegistration<
-    ApiFromModules<{ nested: { forward: typeof forward } }>
-  > = (t, name = "parent") => {
+  const register: ComponentRegistration<ApiFromModules<{ nested: { forward: typeof forward } }>> = (
+    t,
+    name = "parent",
+  ) => {
     t.registerComponent(name, counterTest.schema, {
       ...counterTest.modules,
       "./component/nested.ts": async () => ({ forward }),
@@ -249,19 +225,14 @@ test("registration failures propagate without affecting later test instances", a
   const { createTest } = app.defineModules({});
   expect(createTest).toThrow("registration failed");
   const t = createTest();
-  expect(
-    await t.query(app.components.counter.public.count, { name: "beans" }),
-  ).toBe(0);
+  expect(await t.query(app.components.counter.public.count, { name: "beans" })).toBe(0);
 });
 
-test.each(["", "parent/nested"])(
-  "rejects invalid top-level component name %j",
-  (name) => {
-    expect(() =>
-      defineTestApp({ schema, components: { [name]: counterTest } }),
-    ).toThrow("Invalid component instance name");
-  },
-);
+test.each(["", "parent/nested"])("rejects invalid top-level component name %j", (name) => {
+  expect(() => defineTestApp({ schema, components: { [name]: counterTest } })).toThrow(
+    "Invalid component instance name",
+  );
+});
 
 test("component references retain their argument, result, and function types", () => {
   const app = defineTestApp({ schema, components: { counter: counterTest } });

@@ -47,37 +47,29 @@ test("all types serde", async () => {
   await t.run(async (ctx) => {
     async function testBody(body: any) {
       const id = await ctx.db.insert("messages", { body });
-      // Simple db.get
       const byGet = await ctx.db.get(id);
       expect(byGet).not.toBeNull();
       expectBodiesEq(byGet!.body, body);
-      // Indexed db.query
       const byIndex = await ctx.db
         .query("messages")
         .withIndex("body", (q) => q.eq("body", body))
         .unique();
       expect(byIndex).not.toBeNull();
       expectBodiesEq(byIndex!.body, body);
-      // Filtered db.query
       const byFilter = await ctx.db
         .query("messages")
         .filter((q) => q.eq(q.field("body"), body))
         .unique();
       expect(byFilter).not.toBeNull();
       expectBodiesEq(byFilter!.body, body);
-      // Patch
       await ctx.db.patch(id, { body });
       expectBodiesEq((await ctx.db.get(id))!.body, body);
-      // Replace
       await ctx.db.replace(id, { body });
       expectBodiesEq((await ctx.db.get(id))!.body, body);
-      // Delete
       await ctx.db.delete(id);
       const byGetAfterDelete = await ctx.db.get(id);
       expect(byGetAfterDelete).toBeNull();
     }
-    // NOTE: do it this way instead of with an array so the failed test case
-    // shows up in the stacktrace.
     await testBody("stringValue");
     await testBody(undefined);
     await testBody(true);
@@ -92,6 +84,6 @@ test("all types serde", async () => {
     await testBody(Number.POSITIVE_INFINITY);
     await testBody(Number.NEGATIVE_INFINITY);
     await testBody(-0.0);
-    await testBody(NaN);
+    await testBody(Number.NaN);
   });
 });

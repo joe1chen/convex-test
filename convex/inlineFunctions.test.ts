@@ -159,11 +159,9 @@ test("inline action calling function reference via ctx.runMutation", async () =>
 
 test("inline action with identity", async () => {
   const t = convexTest(schema);
-  const identity = await t
-    .withIdentity({ name: "Action User" })
-    .action(async (ctx) => {
-      return await ctx.auth.getUserIdentity();
-    });
+  const identity = await t.withIdentity({ name: "Action User" }).action(async (ctx) => {
+    return await ctx.auth.getUserIdentity();
+  });
   expect(identity).toMatchObject({ name: "Action User" });
 });
 
