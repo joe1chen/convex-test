@@ -58,6 +58,13 @@ Hosts compile `index.ts` under their own settings. With `strict: false`,
 required the absent keys as `undefined`. The keys are now optional.
 `bun run typecheck` also compiles the library with `tsconfig.non-strict-host.json`.
 
+### ES2021 lib in the library (upstream-PR candidate)
+
+Convex's `convex/tsconfig.json` template compiles with `lib: ["es2021"]`, and
+a host checks `index.ts` as source under its own lib. `createTestJwt` read its
+claim names through `Object.hasOwn` (ES2022); the table is now a `Map`.
+`bun run typecheck` also compiles the library with `tsconfig.es2021-host.json`.
+
 ## Gates
 
 CLAUDE.md "Gate policy": `format` is `bun run format:layer` (comment strip, then

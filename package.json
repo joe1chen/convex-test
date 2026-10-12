@@ -27,7 +27,7 @@
     "format:layer": "check-banned-patterns --strip-comments $(git ls-files '*.ts' ':!:**/_generated/**') && biome check --write .",
     "prepare": "[ -d .git ] && lefthook install || true",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.non-strict-host.json && tsc -p convex/tsconfig.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.non-strict-host.json && tsc --noEmit -p tsconfig.es2021-host.json && tsc -p convex/tsconfig.json"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

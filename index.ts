@@ -1249,27 +1249,27 @@ class AuthFake {
   }
 }
 
-const JWT_CLAIM_BY_IDENTITY_ATTRIBUTE: Record<string, string> = {
-  subject: "sub",
-  issuer: "iss",
-  name: "name",
-  givenName: "given_name",
-  familyName: "family_name",
-  nickname: "nickname",
-  preferredUsername: "preferred_username",
-  profileUrl: "profile",
-  pictureUrl: "picture",
-  email: "email",
-  emailVerified: "email_verified",
-  gender: "gender",
-  birthday: "birthdate",
-  timezone: "zoneinfo",
-  language: "locale",
-  phoneNumber: "phone_number",
-  phoneNumberVerified: "phone_number_verified",
-  address: "address",
-  updatedAt: "updated_at",
-};
+const JWT_CLAIM_BY_IDENTITY_ATTRIBUTE = new Map<string, string>([
+  ["subject", "sub"],
+  ["issuer", "iss"],
+  ["name", "name"],
+  ["givenName", "given_name"],
+  ["familyName", "family_name"],
+  ["nickname", "nickname"],
+  ["preferredUsername", "preferred_username"],
+  ["profileUrl", "profile"],
+  ["pictureUrl", "picture"],
+  ["email", "email"],
+  ["emailVerified", "email_verified"],
+  ["gender", "gender"],
+  ["birthday", "birthdate"],
+  ["timezone", "zoneinfo"],
+  ["language", "locale"],
+  ["phoneNumber", "phone_number"],
+  ["phoneNumberVerified", "phone_number_verified"],
+  ["address", "address"],
+  ["updatedAt", "updated_at"],
+]);
 
 function base64UrlEncode(value: string) {
   const bytes = new TextEncoder().encode(value);
@@ -1286,9 +1286,7 @@ function createTestJwt(identity: Record<string, any>) {
     if (value === undefined || attribute === "tokenIdentifier") {
       continue;
     }
-    const claimName = Object.hasOwn(JWT_CLAIM_BY_IDENTITY_ATTRIBUTE, attribute)
-      ? JWT_CLAIM_BY_IDENTITY_ATTRIBUTE[attribute]
-      : attribute;
+    const claimName = JWT_CLAIM_BY_IDENTITY_ATTRIBUTE.get(attribute) ?? attribute;
     claims[claimName] = value;
   }
   claims.iss = identity.issuer;
