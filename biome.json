@@ -1,0 +1,78 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core"
+  ],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "*.ts",
+      "convex/**",
+      "*.json",
+      "!**/_generated",
+      "!package-lock.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off",
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "requireAscii": true,
+            "filenameCases": [
+              "kebab-case",
+              "snake_case"
+            ]
+          }
+        },
+        "noExportedImports": "off",
+        "useDestructuring": "off",
+        "noParameterProperties": "off",
+        "useReadonlyClassProperties": "off",
+        "useConsistentTypeDefinitions": "off",
+        "useConsistentMemberAccessibility": "off"
+      },
+      "suspicious": {
+        "noUnnecessaryConditions": "off",
+        "noEmptyBlockStatements": "off",
+        "noExplicitAny": "off",
+        "useAwait": "off"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "off",
+        "noRedundantDefaultExport": "off"
+      },
+      "performance": {
+        "noAwaitInLoops": "off",
+        "noDelete": "off",
+        "noNamespaceImport": "off"
+      },
+      "correctness": {
+        "noUnreachable": "off",
+        "noUnusedFunctionParameters": "off"
+      }
+    }
+  }
+}
