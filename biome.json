@@ -48,9 +48,7 @@
         "useReadonlyClassProperties": "off",
         "useConsistentTypeDefinitions": "off",
         "useConsistentMemberAccessibility": "off",
-        "noIncrementDecrement": "off",
         "useConsistentArrayType": "off",
-        "useConsistentMethodSignatures": "off",
         "useTemplate": "off",
         "useDefaultSwitchClause": "off",
         "useAtIndex": "off",
@@ -58,22 +56,22 @@
         "useUnifiedTypeSignatures": "off",
         "useShorthandAssign": "off",
         "useForOf": "off",
-        "useErrorCause": "off",
         "useDefaultParameterLast": "off",
-        "noParameterAssign": "off"
+        "noParameterAssign": "off",
+        "useBlockStatements": "off"
       },
       "suspicious": {
         "noUnnecessaryConditions": "off",
         "noEmptyBlockStatements": "off",
         "noExplicitAny": "off",
         "useAwait": "off",
-        "noShadow": "off",
         "noBitwiseOperators": "off",
         "noDoubleEquals": "off",
         "noEvolvingTypes": "off",
         "useStaticResponseMethods": "off",
         "noImplicitAnyLet": "off",
-        "noConfusingVoidType": "off"
+        "noConfusingVoidType": "off",
+        "noMisplacedAssertion": "off"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": "off",
@@ -81,8 +79,7 @@
         "noVoid": "off",
         "useLiteralKeys": "off",
         "noForEach": "off",
-        "noUselessStringConcat": "off",
-        "useArrayFind": "off"
+        "noUselessStringConcat": "off"
       },
       "performance": {
         "noAwaitInLoops": "off",
