@@ -7,7 +7,7 @@ on the one below. FORK.md lists the patches and their rules.
 |-----------|----------------------------------------------------------------------------|
 | `mirror`  | upstream `main`, untouched. Never commit here; `git fetch upstream` moves it. |
 | `tooling` | off `mirror`: THIS workspace's toolchain only — Biome (ultracite), TypeScript 7, vitest, lefthook, bun.lock, the manifest (name, source export, dependencies aligned with the host: convex, vitest, typescript). No source change. |
-| `format`  | off `tooling`: the formatter applied to `index.ts`, `transactionMetrics.ts` and `convex/`. Regenerated, never hand-resolved. |
+| `format`  | off `tooling`: `bun run format:layer` applied to upstream's code: comments stripped (the host's zero-comments rule; tool directives stay) and `biome check --write`. Regenerated, never hand-resolved. |
 | `patches` | off `format`: every behaviour change of ours, one commit each with its reason, its tests, FORK.md. |
 
 `main` is `patches`, fast-forward only. Hosts vendor `main` by git subtree.
@@ -37,8 +37,10 @@ git rebase --update-refs mirror patches        # moves tooling, format and patch
 - A conflict in `tooling` is a manifest or config conflict: keep ours, take upstream's new
   dependencies only where the host has them.
 - A conflict in `format` is never resolved by hand: `git checkout --theirs -- index.ts
-  transactionMetrics.ts convex && bunx biome check --write . && git add -A && git rebase
-  --continue` (theirs = upstream's new text).
+  transactionMetrics.ts convex && bun run format:layer && git add -A && git rebase --continue`
+  (theirs = upstream's new text). `format:layer` runs the host's comment stripper
+  (`tools/check-banned-patterns` in gongboo-ban, by absolute path, so it needs that checkout and
+  cargo).
 - A conflict in `patches` is semantic: read upstream's change, keep the rule FORK.md names.
 - Then `bun install && bun run check && bun run typecheck && bun run test`, tag the base
   (`git tag base/vNEW 'vNEW^{commit}'`), push every branch (`main` fast-forwards to `patches`),
@@ -47,6 +49,9 @@ git rebase --update-refs mirror patches        # moves tooling, format and patch
 ## Rules
 
 - **Every fork rule has a test that names it** (`fork:` tests).
+- **No comments**, as in the host: names, tests and commit bodies carry the why. Tool directives
+  (`/// <reference>`, `@vitest-environment`, …) stay. Upstream's LICENSE stays untouched; a
+  per-file license header would never be stripped.
 - **No host knowledge.** The library knows nothing of the apps that vendor it.
 - Runtime and package manager is Bun. Upstream's `package-lock.json` is left as the mirror has
   it; `bun.lock` is ours.

@@ -24,6 +24,7 @@
   "scripts": {
     "check": "biome check .",
     "check:fix": "biome check . --write",
+    "format:layer": "cargo run --quiet --release --manifest-path /Users/josephchen/Dev/gongboo-ban/tools/check-banned-patterns/Cargo.toml -- --strip-comments $(git ls-files '*.ts' ':!:**/_generated/**') && biome check --write .",
     "prepare": "[ -d .git ] && lefthook install || true",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc -p convex/tsconfig.json"
