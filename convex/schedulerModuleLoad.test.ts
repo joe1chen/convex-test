@@ -7,13 +7,9 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
 
-const realSetImmediate = globalThis.setImmediate;
+const realSetTimeout = globalThis.setTimeout;
 
-async function afterEventLoopTurns(turns: number): Promise<void> {
-  for (let turn = 0; turn < turns; turn++) {
-    await new Promise<void>((resolve) => realSetImmediate(resolve));
-  }
-}
+const SLOW_MODULE_LOAD_MS = 500;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -26,7 +22,7 @@ test("finishes scheduled functions with slow module loads", async () => {
   const t = convexTest(schema, {
     ...modules,
     "./scheduler.ts": async () => {
-      await afterEventLoopTurns(12_000);
+      await new Promise<void>((resolve) => realSetTimeout(resolve, SLOW_MODULE_LOAD_MS));
       return await import("./scheduler");
     },
   });
